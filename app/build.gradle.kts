@@ -11,8 +11,10 @@ android {
         applicationId = "app.hopescrolling"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3"
+        // Fourni par la CI (numéro du run) ; 1 pour une compilation locale.
+        val ciVersion = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionCode = ciVersion
+        versionName = "0.$ciVersion"
     }
 
     signingConfigs {

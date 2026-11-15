@@ -3,6 +3,7 @@ package app.hopescrolling
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.GestureResultCallback
 import android.accessibilityservice.GestureDescription
+import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Handler
@@ -34,6 +35,8 @@ class BlockerService : AccessibilityService() {
     private var skipping = false
     private var lastSkipAt = 0L
 
+    private var lastProtectAt = 0L
+
     private val deferredCheck = Runnable {
         pendingPkg?.let { check(it) }
         pendingPkg = null
@@ -41,6 +44,8 @@ class BlockerService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val pkg = event.packageName?.toString() ?: return
+        if (pkg in SETTINGS_PKGS) { protectSettings(pkg); return }
+        if (gate(pkg)) return
         val targets = Target.forPackage(pkg)
         if (targets.isEmpty()) return
 
@@ -82,7 +87,10 @@ class BlockerService : AccessibilityService() {
                 else -> false
             }
             if (hit) {
-                block(t, GLOBAL_ACTION_BACK); return
+                // Budget quotidien : on laisse passer tant qu'il en reste.
+                if (ShortsBudget.allow(this)) return
+                val m = if (Prefs.shortsBudgetMin(this) > 0) Metric.BUDGET_LIMIT else Metric.BLOCK
+                block(t, GLOBAL_ACTION_BACK, metric = m); return
             }
         }
 
@@ -122,7 +130,7 @@ class BlockerService : AccessibilityService() {
         val distance = (m.top - l.top) + l.width() + (POST_EXTRA_DP * d).toInt()
         lastSkipAt = now
         skipping = true
-        Prefs.recordSkip(this)
+        Stats.record(this, Metric.SKIP)
         swipeUp(l, distance)
     }
 
@@ -214,18 +222,23 @@ class BlockerService : AccessibilityService() {
 
         // Le compteur reste plein : chaque tentative relance les 15 min d'attente.
         if (feedSwipes > FEED_SWIPE_BUDGET && now - lastActionAt > COOLDOWN_MS) {
-            block(t, GLOBAL_ACTION_HOME, recheck = false)
+            block(t, GLOBAL_ACTION_HOME, recheck = false, metric = Metric.FEED_LIMIT)
         }
     }
 
     private fun AccessibilityNodeInfo.visible(fullId: String): List<AccessibilityNodeInfo> =
         findAccessibilityNodeInfosByViewId(fullId).filter { it.isVisibleToUser }
 
-    private fun block(target: Target, action: Int, recheck: Boolean = true) {
+    private fun block(
+        target: Target,
+        action: Int,
+        recheck: Boolean = true,
+        metric: Metric = Metric.BLOCK,
+    ) {
         lastActionAt = SystemClock.uptimeMillis()
         performGlobalAction(action)
-        Prefs.recordBlock(this)
-        Toast.makeText(this, target.toast, Toast.LENGTH_SHORT).show()
+        Stats.record(this, metric)
+        toast(if (metric == Metric.BUDGET_LIMIT) "Budget Shorts du jour épuisé 🛑" else target.toast)
         if (!recheck) return
         // Encore sur l'écran bloqué après un Retour (onglet Shorts au démarrage,
         // historique du navigateur rempli de Shorts…) : on recommence.
@@ -244,6 +257,73 @@ class BlockerService : AccessibilityService() {
         Prefs.saveDump(this, pkg, Diagnostic.dump(root, pkg in BROWSER_URL_BARS))
     }
 
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    /**
+     * Couvre-feu, mode concentration et pause consciente.
+     * Renvoie true si l'événement est entièrement traité (rien d'autre à vérifier).
+     */
+    private fun gate(pkg: String): Boolean {
+        val now = SystemClock.uptimeMillis()
+        if (pkg in LOCKDOWN_APPS) {
+            val reason = Rules.lockdownReason(this)
+            if (reason != null) {
+                if (now - lastActionAt > COOLDOWN_MS) {
+                    lastActionAt = now
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                    Stats.record(this, Metric.CURFEW)
+                    toast("$reason 🌙")
+                }
+                return true
+            }
+        }
+        if (pkg !in PAUSE_APPS || !Prefs.pauseEnabled(this, pkg)) return false
+        if (Passes.has(pkg)) { Passes.extend(pkg); return false }
+        if (Passes.pausingPkg == pkg && now - Passes.pausingSince < 30_000) return true
+        // Uniquement si l'appli est vraiment au premier plan.
+        if (rootInActiveWindow?.packageName?.toString() != pkg) return true
+        Passes.pausingPkg = pkg
+        Passes.pausingSince = now
+        startActivity(
+            Intent(this, PauseActivity::class.java)
+                .putExtra(PauseActivity.EXTRA_PKG, pkg)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        )
+        return true
+    }
+
+    /**
+     * Protection des réglages : empêche d'ouvrir la page qui désactive le service,
+     * la page "Infos de l'appli" (forcer l'arrêt, désinstaller) et la désinstallation.
+     */
+    private fun protectSettings(pkg: String) {
+        if (!Prefs.protection(this)) return
+        val now = SystemClock.uptimeMillis()
+        if (now - lastProtectAt < 500) return
+        val root = rootInActiveWindow ?: return
+        if (root.packageName?.toString() != pkg) return
+        val app = getString(R.string.app_name)
+        val texts = root.findAccessibilityNodeInfosByText(app)
+            .filter { it.isVisibleToUser }
+            .mapNotNull { (it.text ?: it.contentDescription)?.toString()?.trim() }
+        if (texts.isEmpty()) return
+
+        fun hasText(words: List<String>) = words.any { w ->
+            root.findAccessibilityNodeInfosByText(w).any { it.isVisibleToUser }
+        }
+        val danger = if (pkg == SETTINGS) {
+            texts.any { t -> USE_PREFIXES.any { t.startsWith(it, ignoreCase = true) } } ||
+                (texts.any { it == app } && hasText(APP_INFO_TEXTS))
+        } else {
+            hasText(UNINSTALL_TEXTS) // l'installateur, mais pas pour une mise à jour
+        }
+        if (danger) {
+            lastProtectAt = now
+            performGlobalAction(GLOBAL_ACTION_BACK)
+            toast("Protégé 🔒 Désactive la protection dans Hopescrolling d'abord")
+        }
+    }
+
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
@@ -257,5 +337,11 @@ class BlockerService : AccessibilityService() {
         const val SWIPE_GAP_MS = 350L
         const val SKIP_COOLDOWN_MS = 600L
         const val POST_EXTRA_DP = 170
+
+        const val SETTINGS = "com.android.settings"
+        val SETTINGS_PKGS = setOf(SETTINGS, "com.google.android.packageinstaller", "com.android.packageinstaller")
+        val USE_PREFIXES = listOf("Utiliser ", "Use ")
+        val APP_INFO_TEXTS = listOf("Forcer l'arrêt", "Force stop", "Désinstaller", "Uninstall")
+        val UNINSTALL_TEXTS = listOf("désinstaller", "uninstall")
     }
 }

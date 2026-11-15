@@ -1,44 +1,55 @@
 package app.hopescrolling
 
 import android.content.Context
-import java.time.LocalDate
+import java.time.LocalTime
 
 object Prefs {
     private const val FILE = "hopescrolling"
 
-    private fun sp(c: Context) = c.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun sp(c: Context) = c.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
-    fun isEnabled(c: Context, t: Target) = sp(c).getBoolean("enabled_${t.name}", true)
-    fun setEnabled(c: Context, t: Target, v: Boolean) =
-        sp(c).edit().putBoolean("enabled_${t.name}", v).apply()
+    private fun bool(c: Context, k: String, def: Boolean) = sp(c).getBoolean(k, def)
+    private fun setBool(c: Context, k: String, v: Boolean) = sp(c).edit().putBoolean(k, v).apply()
+    private fun int(c: Context, k: String, def: Int) = sp(c).getInt(k, def)
+    private fun setInt(c: Context, k: String, v: Int) = sp(c).edit().putInt(k, v).apply()
 
-    fun recordBlock(c: Context) {
-        val p = sp(c)
-        val today = LocalDate.now().toString()
-        val todayCount = if (p.getString("day", null) == today) p.getInt("today", 0) else 0
-        p.edit()
-            .putString("day", today)
-            .putInt("today", todayCount + 1)
-            .putInt("total", p.getInt("total", 0) + 1)
-            .apply()
-    }
+    // --- Blocages ---
+    fun isEnabled(c: Context, t: Target) = bool(c, "enabled_${t.name}", true)
+    fun setEnabled(c: Context, t: Target, v: Boolean) = setBool(c, "enabled_${t.name}", v)
 
-    fun todayCount(c: Context): Int {
-        val p = sp(c)
-        return if (p.getString("day", null) == LocalDate.now().toString()) p.getInt("today", 0) else 0
-    }
+    // --- Pause consciente ---
+    fun pauseEnabled(c: Context, pkg: String) = bool(c, "pause_$pkg", true)
+    fun setPauseEnabled(c: Context, pkg: String, v: Boolean) = setBool(c, "pause_$pkg", v)
 
-    fun totalCount(c: Context) = sp(c).getInt("total", 0)
+    // --- Anti-triche ---
+    fun lockEnabled(c: Context) = bool(c, "lock", false)
+    fun setLockEnabled(c: Context, v: Boolean) = setBool(c, "lock", v)
+    fun protection(c: Context) = bool(c, "protect", false)
+    fun setProtection(c: Context, v: Boolean) = setBool(c, "protect", v)
 
-    fun recordSkip(c: Context) = sp(c).edit().putInt("skipped", sp(c).getInt("skipped", 0) + 1).apply()
-    fun skippedCount(c: Context) = sp(c).getInt("skipped", 0)
+    // --- Règles horaires ---
+    fun curfewOn(c: Context) = bool(c, "curfew", false)
+    fun setCurfewOn(c: Context, v: Boolean) = setBool(c, "curfew", v)
+    /** En minutes depuis minuit. */
+    fun curfewStart(c: Context) = int(c, "curfew_start", 23 * 60)
+    fun curfewEnd(c: Context) = int(c, "curfew_end", 7 * 60)
+    fun setCurfew(c: Context, start: Int, end: Int) =
+        sp(c).edit().putInt("curfew_start", start).putInt("curfew_end", end).apply()
+
+    /** Minutes de Shorts/Reels autorisées par jour (0 = toujours bloqués). */
+    fun shortsBudgetMin(c: Context) = int(c, "shorts_budget", 0)
+    fun setShortsBudgetMin(c: Context, v: Int) = setInt(c, "shorts_budget", v)
+
+    /** Fin du mode concentration (epoch ms), 0 si inactif. */
+    fun focusUntil(c: Context) = sp(c).getLong("focus_until", 0L)
+    fun setFocusUntil(c: Context, v: Long) = sp(c).edit().putLong("focus_until", v).apply()
 
     // --- Mode diagnostic ---
-    fun diagnostic(c: Context) = sp(c).getBoolean("diag", false)
-    fun setDiagnostic(c: Context, v: Boolean) = sp(c).edit().putBoolean("diag", v).apply()
+    fun diagnostic(c: Context) = bool(c, "diag", false)
+    fun setDiagnostic(c: Context, v: Boolean) = setBool(c, "diag", v)
 
     fun saveDump(c: Context, pkg: String, dump: String) =
-        sp(c).edit().putString("dump_$pkg", "${java.time.LocalTime.now().withNano(0)}\n$dump").apply()
+        sp(c).edit().putString("dump_$pkg", "${LocalTime.now().withNano(0)}\n$dump").apply()
 
     fun allDumps(c: Context): String =
         sp(c).all.filterKeys { it.startsWith("dump_") }.entries

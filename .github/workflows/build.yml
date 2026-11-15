@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,8 +18,27 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Build
+        # Le numéro du run sert de versionCode : chaque build est plus récent que le précédent.
+        env:
+          VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew assembleDebug --no-daemon
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk hopescrolling.apk
       - uses: actions/upload-artifact@v4
         with:
           name: hopescrolling-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: hopescrolling.apk
+      # Une release par build : lien stable .../releases/latest/download/hopescrolling.apk,
+      # et Obtainium peut suivre les mises à jour.
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.${{ github.run_number }}
+          name: Hopescrolling 0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            ${{ github.event.head_commit.message }}
+
+            Installation : télécharge hopescrolling.apk ci-dessous, ou suis ce dépôt avec Obtainium.
+          files: hopescrolling.apk

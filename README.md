@@ -33,12 +33,29 @@ Tout se trouve dans `app/src/main/java/app/hopescrolling/` :
 - `BlockerService.kt` : la détection et l'action Retour
 - `MainActivity.kt` : l'écran d'état, les interrupteurs et le compteur
 
+## Autres fonctions
+
+- **Pause consciente** : avant d'ouvrir Instagram ou YouTube, 8 secondes de respiration et
+  la question « Pourquoi tu ouvres… ? ». Ensuite tu choisis de fermer ou de continuer.
+  Une fois la pause passée, l'appli reste libre tant que tu l'utilises, plus 3 minutes.
+- **Couvre-feu** (par défaut de 23:00 à 07:00) et **mode concentration** (30 min à 4 h) :
+  Instagram, YouTube et TikTok sont entièrement bloqués.
+- **Budget Shorts/Reels** : 0, 5, 10, 15 ou 30 minutes par jour avant le blocage.
+- **Verrou** : pour assouplir une règle, il faut attendre 30 s et recopier
+  « Je choisis de perdre mon temps ».
+- **Protection des réglages** : empêche d'ouvrir la page d'accessibilité de Hopescrolling,
+  ses infos d'appli (forcer l'arrêt) et sa désinstallation.
+- **Stats** : minutes récupérées (estimation), graphique sur 7 jours, série de jours sans
+  atteindre une limite, et un widget pour l'écran d'accueil.
+
 ## Installer sur un Pixel
 
-1. Ouvre l'onglet **Actions** du dépôt GitHub, puis le dernier run *Build APK* réussi.
-   Télécharge l'artefact `hopescrolling-apk` (un zip qui contient `app-debug.apk`).
-2. Ouvre le zip sur le téléphone et installe l'APK. Autorise l'installation depuis le
-   navigateur ou l'appli Fichiers si Android le demande.
+1. Télécharge **hopescrolling.apk** depuis la
+   [dernière version](https://github.com/VoxZephir/Hopescrolling/releases/latest).
+   Lien direct : https://github.com/VoxZephir/Hopescrolling/releases/latest/download/hopescrolling.apk
+2. Installe l'APK. Si Play Protect le bloque (« Appli bloquée pour protéger votre
+   appareil »), désactive temporairement l'analyse : Play Store → profil → Play Protect →
+   ⚙️ → « Analyser les applications avec Play Protect ».
 3. Ouvre Hopescrolling, puis **Activer dans Accessibilité** → Hopescrolling → activer.
    - Si l'option est grisée (Android 13 et plus, pour une appli installée hors du Play Store) :
      **Paramètres → Applis → Hopescrolling → ⋮ (en haut à droite) → Autoriser les paramètres
@@ -46,6 +63,10 @@ Tout se trouve dans `app/src/main/java/app/hopescrolling/` :
 
 Les mises à jour s'installent par-dessus l'ancienne version, parce que l'APK est toujours
 signé avec la même clé (`app/debug.keystore`).
+
+**Mises à jour automatiques** : installe [Obtainium](https://github.com/ImranR98/Obtainium),
+appuie sur « Ajouter une appli » et colle `https://github.com/VoxZephir/Hopescrolling`.
+Chaque push publie une nouvelle version sur GitHub, et Obtainium te la propose.
 
 Pour compiler en local avec le SDK Android : `./gradlew assembleDebug`.
 

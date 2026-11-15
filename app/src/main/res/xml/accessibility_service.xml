@@ -8,4 +8,4 @@
     android:canPerformGestures="true"
     android:description="@string/service_description"
     android:notificationTimeout="100"
-    android:packageNames="com.google.android.youtube,com.instagram.android,com.zhiliaoapp.musically,com.ss.android.ugc.trill,com.brave.browser,com.brave.browser_beta,com.android.chrome,org.mozilla.firefox,com.duckduckgo.mobile.android" />
+    android:packageNames="com.google.android.youtube,com.instagram.android,com.zhiliaoapp.musically,com.ss.android.ugc.trill,com.brave.browser,com.brave.browser_beta,com.android.chrome,org.mozilla.firefox,com.duckduckgo.mobile.android,com.android.settings,com.google.android.packageinstaller,com.android.packageinstaller" />

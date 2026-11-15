@@ -29,7 +29,7 @@ enum class Target(
         label = "YouTube Shorts",
         toast = "YouTube Shorts bloqué 🛑",
         kind = Kind.VIEW_IDS,
-        packages = listOf("com.google.android.youtube"),
+        packages = listOf(YOUTUBE),
         viewIds = listOf(
             "reel_recycler",
             "reel_player_page_container",
@@ -82,6 +82,7 @@ enum class Target(
 }
 
 const val INSTAGRAM = "com.instagram.android"
+const val YOUTUBE = "com.google.android.youtube"
 
 /** Nombre de swipes autorisés dans le fil Instagram avant d'être renvoyé à l'accueil. */
 const val FEED_SWIPE_BUDGET = 10
