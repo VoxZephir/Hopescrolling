@@ -20,6 +20,8 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SmartDisplay
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,7 +76,18 @@ fun BlocksScreen() {
                 }
             }
         }
-        Hint("Pour chaque appli : pause à l'ouverture, limite de scroll, et fermeture pendant le couvre-feu et le mode concentration.")
+        Hint("Pour chaque appli : pause à l'ouverture, limite de scroll, limite quotidienne, et fermeture pendant le couvre-feu et le mode concentration.")
+
+        SectionTitle("Jeux")
+        HopeCard {
+            val games = remember { Apps.installedGames(c).size }
+            ToggleRow(Icons.Rounded.SportsEsports, "Surveiller tous les jeux",
+                "$games jeu(x) installé(s). Les nouveaux jeux sont ajoutés automatiquement, avec 60 min par jour, la pause et le couvre-feu.",
+                Apps.allGames(c)) { on ->
+                if (on) { Apps.setAllGames(c, true); UiState.bump() }
+                else Lock.guard(c, "ne plus surveiller les jeux") { Apps.setAllGames(c, false) }
+            }
+        }
 
         SectionTitle("Vidéos courtes")
         HopeCard {
@@ -101,6 +114,7 @@ private fun AppRow(pkg: String, onClick: () -> Unit) {
     val opts = buildList {
         if (Apps.pause(c, pkg)) add("Pause")
         if (Apps.hasGenericScroll(pkg) && Apps.scroll(c, pkg)) add("Limite de scroll")
+        Apps.dailyLimit(c, pkg).takeIf { it > 0 }?.let { add("$it min/jour") }
         if (Apps.lockdown(c, pkg)) add("Couvre-feu")
     }
     Row(
@@ -151,6 +165,7 @@ private fun AppSheet(pkg: String, onClose: () -> Unit) {
             } else {
                 Hint("La limite de scroll d'Instagram se règle dans « Vidéos courtes » : elle ne compte que les onglets Accueil et Explorer.")
             }
+            DailyLimitRow(pkg, name)
             ToggleRow(Icons.Rounded.Bedtime, "Couvre-feu et concentration",
                 "Fermée pendant le couvre-feu et le mode concentration.",
                 Apps.lockdown(c, pkg)) { on ->
@@ -174,4 +189,46 @@ private fun iconFor(t: Target): ImageVector = when (t) {
     Target.INSTAGRAM_SUGGESTED -> Icons.Rounded.SkipNext
     Target.TIKTOK -> Icons.Rounded.MusicNote
     Target.BROWSER -> Icons.Rounded.Language
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun DailyLimitRow(pkg: String, name: String) {
+    val c = LocalContext.current
+    UiState.version
+    val limit = Apps.dailyLimit(c, pkg)
+    val used = (app.hopescrolling.Stats.screenMsToday(c, pkg) / 60_000L).toInt()
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Rounded.Timer)
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("Limite quotidienne", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (limit == 0) "Aucune · $used min aujourd'hui"
+                    else "$used min sur $limit aujourd'hui, puis l'appli se referme",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.padding(start = 56.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        ) {
+            listOf(0, 15, 30, 60, 90, 120).forEach { v ->
+                androidx.compose.material3.FilterChip(
+                    selected = limit == v,
+                    onClick = {
+                        // Plus de temps (ou aucune limite) = assouplir -> verrou.
+                        val looser = (v == 0 && limit > 0) || (limit > 0 && v > limit)
+                        if (looser) Lock.guard(c, "assouplir la limite de $name") { Apps.setDailyLimit(c, pkg, v) }
+                        else { Apps.setDailyLimit(c, pkg, v); UiState.bump() }
+                    },
+                    label = { Text(if (v == 0) "Aucune" else "$v min") },
+                )
+            }
+        }
+    }
 }

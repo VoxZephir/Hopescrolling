@@ -118,28 +118,36 @@ class BlockerService : AccessibilityService() {
         if (!onHome) return
 
         val screenH = resources.displayMetrics.heightPixels
-        val marker = SUGGESTED_MARKERS.asSequence()
+        val markers = SUGGESTED_MARKERS.asSequence()
             .flatMap { root.findAccessibilityNodeInfosByText(it).asSequence() }
             .filter { it.isVisibleToUser }
             .filter { n ->
                 val txt = (n.text ?: n.contentDescription)?.toString()?.trim()?.lowercase()
                 txt in SUGGESTED_MARKERS
             }
-            .mapNotNull { n -> feedListOf(n, screenH)?.let { n to it } }
-            .minByOrNull { (n, _) -> Rect().also { r -> n.getBoundsInScreen(r) }.top }
-            ?: return
+            .mapNotNull { n -> feedListOf(n, screenH)?.let { Rect().also { r -> n.getBoundsInScreen(r) } to it } }
+            .sortedBy { it.first.top }
+            .toList()
+        if (markers.isEmpty()) return
 
-        val (node, list) = marker
-        val m = Rect().also { node.getBoundsInScreen(it) }
+        val list = markers.first().second
         val l = Rect().also { list.getBoundsInScreen(it) }
-        val d = resources.displayMetrics.density
         // Taille estimée d'un post à partir de son en-tête : média carré
         // (largeur de l'écran) + boutons, likes et légende.
-        val distance = (m.top - l.top) + l.width() + (POST_EXTRA_DP * d).toInt()
+        val post = l.width() + (POST_EXTRA_DP * resources.displayMetrics.density).toInt()
+        // Plusieurs suggestions à la suite : on les enchaîne dans le même geste.
+        // Un marqueur qui commence avant la fin du post précédent (+ marge) fait
+        // partie de la série.
+        var end = markers.first().first.top + post
+        var count = 1
+        for ((r, _) in markers.drop(1)) {
+            if (r.top > end + post / 3) break
+            if (r.top > end - post / 2) { end = r.top + post; count++ }
+        }
         lastSkipAt = now
         skipping = true
-        Stats.record(this, Metric.SKIP)
-        swipeUp(l, distance)
+        repeat(count) { Stats.record(this, Metric.SKIP) }
+        swipeUp(l, end - l.top)
     }
 
     /** Remonte vers le parent jusqu'à la grande liste qui défile (le fil). */
@@ -172,8 +180,8 @@ class BlockerService : AccessibilityService() {
 
         val move = Path().apply { moveTo(x, startY); lineTo(x, endY) }
         val hold = Path().apply { moveTo(x, endY); lineTo(x, endY + 1f) }
-        val stroke = GestureDescription.StrokeDescription(move, 0, 450, true)
-        val still = stroke.continueStroke(hold, 0, 200, false)
+        val stroke = GestureDescription.StrokeDescription(move, 0, 280, true)
+        val still = stroke.continueStroke(hold, 0, 90, false)
         val first = GestureDescription.Builder().addStroke(stroke).build()
         val second = GestureDescription.Builder().addStroke(still).build()
 
@@ -191,12 +199,13 @@ class BlockerService : AccessibilityService() {
         if (!dispatchGesture(first, done, null)) finishSkip()
     }
 
+    /** Fin du saut : on revérifie tout de suite (la suggestion suivante est peut-être déjà là). */
     private fun finishSkip() {
         handler.postDelayed({
             skipping = false
-            lastSkipAt = SystemClock.uptimeMillis()
+            lastSkipAt = 0L
             rootInActiveWindow?.packageName?.toString()?.let { check(it) }
-        }, 300)
+        }, 120)
     }
 
     /** URL affichée dans la barre d'adresse (ignorée pendant que tu tapes dedans). */
@@ -317,11 +326,56 @@ class BlockerService : AccessibilityService() {
         }
     }
 
+    /**
+     * Toutes les 30 s : enregistre le temps d'écran et applique les limites à l'appli
+     * au premier plan. Indispensable pour les jeux, qui n'envoient presque pas
+     * d'événements d'accessibilité une fois lancés.
+     */
     private val periodicFlush = object : Runnable {
         override fun run() {
-            if (fgPkg != null) { flushScreenTime(); fgSince = SystemClock.uptimeMillis() }
-            handler.postDelayed(this, 60_000)
+            fgPkg?.let { pkg ->
+                flushScreenTime()
+                enforceTimeRules(pkg)
+            }
+            handler.postDelayed(this, 30_000)
         }
+    }
+
+    private val warned = mutableSetOf<String>()
+
+    /** Limite quotidienne, couvre-feu et concentration pour l'appli au premier plan. */
+    private fun enforceTimeRules(pkg: String): Boolean {
+        val cfg = Apps.config(this)
+        val now = SystemClock.uptimeMillis()
+        if (pkg in cfg.lockdown) {
+            Rules.lockdownReason(this)?.let { reason ->
+                if (now - lastActionAt > COOLDOWN_MS) {
+                    lastActionAt = now
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                    Stats.record(this, Metric.CURFEW)
+                    toast(reason)
+                }
+                return true
+            }
+        }
+        val limit = cfg.limits[pkg] ?: return false
+        val usedMs = Stats.screenMsToday(this, pkg) + if (fgPkg == pkg) now - fgSince else 0
+        val leftMin = limit - (usedMs / 60_000L).toInt()
+        val key = "${LocalDate.now()}_$pkg"
+        if (leftMin <= 0) {
+            if (now - lastActionAt > COOLDOWN_MS) {
+                lastActionAt = now
+                performGlobalAction(GLOBAL_ACTION_HOME)
+                Stats.record(this, Metric.DAILY_LIMIT)
+                toast("${Apps.label(this, pkg)} : limite du jour atteinte",
+                    "$limit min par jour. À demain !")
+            }
+            return true
+        }
+        if (leftMin <= 5 && warned.add(key)) {
+            toast("Plus que $leftMin min sur ${Apps.label(this, pkg)}", "Limite quotidienne : $limit min")
+        }
+        return false
     }
 
     /** Appelé quand une autre appli passe au premier plan. */
@@ -355,7 +409,7 @@ class BlockerService : AccessibilityService() {
         } else {
             registerReceiver(screenReceiver, filter)
         }
-        handler.postDelayed(periodicFlush, 60_000)
+        handler.postDelayed(periodicFlush, 30_000)
     }
 
     /**
@@ -365,18 +419,7 @@ class BlockerService : AccessibilityService() {
     private fun gate(pkg: String): Boolean {
         val now = SystemClock.uptimeMillis()
         val cfg = Apps.config(this)
-        if (pkg in cfg.lockdown) {
-            val reason = Rules.lockdownReason(this)
-            if (reason != null) {
-                if (now - lastActionAt > COOLDOWN_MS) {
-                    lastActionAt = now
-                    performGlobalAction(GLOBAL_ACTION_HOME)
-                    Stats.record(this, Metric.CURFEW)
-                    toast(reason)
-                }
-                return true
-            }
-        }
+        if ((pkg in cfg.lockdown || pkg in cfg.limits) && enforceTimeRules(pkg)) return true
         if (pkg !in cfg.pause) return false
         if (Passes.has(pkg)) { Passes.extend(pkg); return false }
         if (Passes.pausingPkg == pkg && now - Passes.pausingSince < 30_000) return true
@@ -438,7 +481,7 @@ class BlockerService : AccessibilityService() {
         const val CHECK_INTERVAL_MS = 200L
         const val COOLDOWN_MS = 700L
         const val SWIPE_GAP_MS = 350L
-        const val SKIP_COOLDOWN_MS = 600L
+        const val SKIP_COOLDOWN_MS = 250L
         const val POST_EXTRA_DP = 170
 
         const val SETTINGS = "com.android.settings"

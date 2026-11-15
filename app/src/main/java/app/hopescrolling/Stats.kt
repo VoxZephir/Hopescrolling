@@ -17,6 +17,7 @@ enum class Metric(
     FEED_LIMIT(10, breaksStreak = true),   // limite du fil atteinte
     BUDGET_LIMIT(0, breaksStreak = true),  // budget Shorts épuisé
     CURFEW(5, breaksStreak = true),        // tentative pendant le couvre-feu / la concentration
+    DAILY_LIMIT(5, breaksStreak = true),   // limite quotidienne d'une appli atteinte
 }
 
 object Stats {
@@ -77,6 +78,9 @@ object Stats {
             .filter { it.second > 0 }
             .sortedByDescending { it.second }
     }
+
+    fun screenMsToday(c: Context, pkg: String): Long =
+        Prefs.sp(c).getLong(screenKey(LocalDate.now(), pkg), 0L)
 
     fun screenMinutes(c: Context, day: LocalDate): Int {
         val prefix = "st_${day}_"

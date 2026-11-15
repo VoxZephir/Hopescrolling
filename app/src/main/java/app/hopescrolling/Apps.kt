@@ -2,7 +2,9 @@ package app.hopescrolling
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.SystemClock
 
 /** Applis connues pour être addictives, proposées en premier dans la liste. */
 val KNOWN_APPS: List<String> = listOf(
@@ -54,45 +56,97 @@ object Apps {
     private const val KEY = "managed_apps"
     private val DEFAULT = setOf("com.linkedin.android", INSTAGRAM, YOUTUBE)
 
+    private const val EXCLUDED = "excluded_games"
+
     class Config(
         val managed: Set<String>,
         val pause: Set<String>,
         val scroll: Set<String>,
         val lockdown: Set<String>,
+        /** Appli -> minutes autorisées par jour. */
+        val limits: Map<String, Int>,
+        val builtAt: Long,
     )
 
     @Volatile private var cache: Config? = null
 
-    fun config(c: Context): Config = cache ?: build(c).also { cache = it }
+    /** Copie en mémoire, reconstruite après un changement ou toutes les 5 min (nouveaux jeux). */
+    fun config(c: Context): Config {
+        val cur = cache
+        if (cur != null && SystemClock.uptimeMillis() - cur.builtAt < 5 * 60_000) return cur
+        return build(c).also { cache = it }
+    }
+
     fun invalidate() { cache = null }
 
     private fun build(c: Context): Config {
-        val m = managed(c)
+        val m = computeManaged(c)
         return Config(
             managed = m,
             pause = m.filter { pause(c, it) }.toSet(),
             scroll = m.filter { scroll(c, it) && hasGenericScroll(it) }.toSet(),
             lockdown = m.filter { lockdown(c, it) }.toSet() + TIKTOK_PKGS,
+            limits = m.associateWith { dailyLimit(c, it) }.filterValues { it > 0 },
+            builtAt = SystemClock.uptimeMillis(),
         )
     }
 
-    fun managed(c: Context): Set<String> =
+    /** Applis surveillées : choisies à la main, plus tous les jeux si l'option est activée. */
+    fun managed(c: Context): Set<String> = config(c).managed
+
+    private fun explicit(c: Context): Set<String> =
         Prefs.sp(c).getStringSet(KEY, null)?.toSet() ?: DEFAULT
 
+    private fun excludedGames(c: Context): Set<String> =
+        Prefs.sp(c).getStringSet(EXCLUDED, null)?.toSet() ?: emptySet()
+
+    private fun computeManaged(c: Context): Set<String> {
+        val base = explicit(c)
+        if (!allGames(c)) return base
+        return base + (installedGames(c) - excludedGames(c))
+    }
+
     fun add(c: Context, pkg: String) {
-        Prefs.sp(c).edit().putStringSet(KEY, managed(c) + pkg).apply()
+        Prefs.sp(c).edit()
+            .putStringSet(KEY, explicit(c) + pkg)
+            .putStringSet(EXCLUDED, excludedGames(c) - pkg)
+            .apply()
         invalidate()
     }
 
     fun remove(c: Context, pkg: String) {
-        Prefs.sp(c).edit().putStringSet(KEY, managed(c) - pkg).apply()
+        val e = Prefs.sp(c).edit().putStringSet(KEY, explicit(c) - pkg)
+        if (isGame(c, pkg)) e.putStringSet(EXCLUDED, excludedGames(c) + pkg)
+        e.apply()
         invalidate()
     }
 
-    // Options par appli (activées par défaut, sauf la limite de scroll sur YouTube)
+    // --- Jeux ---
+    fun allGames(c: Context) = Prefs.sp(c).getBoolean("all_games", false)
+    fun setAllGames(c: Context, v: Boolean) = set(c, "all_games", v)
+
+    fun isGame(c: Context, pkg: String): Boolean = try {
+        val ai = c.packageManager.getApplicationInfo(pkg, 0)
+        @Suppress("DEPRECATION")
+        ai.category == ApplicationInfo.CATEGORY_GAME || (ai.flags and ApplicationInfo.FLAG_IS_GAME) != 0
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
+
+    fun installedGames(c: Context): Set<String> = launchable(c).filter { isGame(c, it) }.toSet()
+
+    // Options par appli. Par défaut : pause et couvre-feu activés ; limite de scroll
+    // sauf sur YouTube et les jeux ; limite quotidienne de 60 min pour les jeux.
     fun pause(c: Context, pkg: String) = Prefs.sp(c).getBoolean("pause_$pkg", true)
-    fun scroll(c: Context, pkg: String) = Prefs.sp(c).getBoolean("scroll_$pkg", pkg != YOUTUBE)
+    fun scroll(c: Context, pkg: String) =
+        Prefs.sp(c).getBoolean("scroll_$pkg", pkg != YOUTUBE && !isGame(c, pkg))
     fun lockdown(c: Context, pkg: String) = Prefs.sp(c).getBoolean("lockdown_$pkg", true)
+    fun dailyLimit(c: Context, pkg: String) =
+        Prefs.sp(c).getInt("limit_$pkg", if (isGame(c, pkg)) 60 else 0)
+    fun setDailyLimit(c: Context, pkg: String, minutes: Int) {
+        Prefs.sp(c).edit().putInt("limit_$pkg", minutes).apply()
+        invalidate()
+    }
 
     fun setPause(c: Context, pkg: String, v: Boolean) = set(c, "pause_$pkg", v)
     fun setScroll(c: Context, pkg: String, v: Boolean) = set(c, "scroll_$pkg", v)

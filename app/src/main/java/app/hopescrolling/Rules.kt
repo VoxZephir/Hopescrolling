@@ -19,6 +19,14 @@ object Rules {
 
     fun focusActive(c: Context) = Prefs.focusUntil(c) > System.currentTimeMillis()
 
+    fun startFocus(c: Context, minutes: Int) {
+        val now = System.currentTimeMillis()
+        Prefs.sp(c).edit().putLong("focus_start", now).apply()
+        Prefs.setFocusUntil(c, now + minutes * 60_000L)
+        HopeWidget.refresh(c)
+        FocusWidget.refresh(c)
+    }
+
     /** Pourquoi tout est bloqué en ce moment (null si rien). */
     fun lockdownReason(c: Context): String? = when {
         focusActive(c) -> "Mode concentration jusqu'à " +

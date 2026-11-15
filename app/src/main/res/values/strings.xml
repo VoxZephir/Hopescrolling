@@ -11,4 +11,7 @@
     <string name="diag_empty">Rien d\'enregistré pour l\'instant : active le mode puis ouvre l\'appli à analyser.</string>
     <string name="tagline">Arrête de scroller. Le reste de tes applis marche normalement.</string>
     <string name="hint">Sideload sur Android 13+ : si l\'option est grisée, va dans Infos de l\'appli → ⋮ → « Autoriser les paramètres restreints », puis réessaie.</string>
+    <string name="stats_widget_desc">Temps récupéré aujourd\'hui et ta série</string>
+    <string name="focus_widget_desc">Lance une heure de concentration en un appui</string>
+    <string name="focus_widget_label">Concentration</string>
 </resources>

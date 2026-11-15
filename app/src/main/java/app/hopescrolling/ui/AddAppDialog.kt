@@ -47,9 +47,11 @@ fun AddAppDialog(onClose: () -> Unit) {
     val managed = Apps.managed(c) + added
     val candidates = all.filter { (pkg, _) -> pkg !in managed }
         .filter { (_, label) -> query.isBlank() || label.contains(query.trim(), ignoreCase = true) }
+    val games = remember { Apps.installedGames(c) }
     val suggested = candidates.filter { it.first in KNOWN_APPS }
         .sortedBy { KNOWN_APPS.indexOf(it.first) }
-    val others = candidates.filter { it.first !in KNOWN_APPS }
+    val gameList = candidates.filter { it.first in games && it.first !in KNOWN_APPS }
+    val others = candidates.filter { it.first !in KNOWN_APPS && it.first !in games }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
@@ -70,6 +72,12 @@ fun AddAppDialog(onClose: () -> Unit) {
                     if (suggested.isNotEmpty()) {
                         item { SectionTitle("Suggestions", Modifier.padding(start = 8.dp)) }
                         items(suggested, key = { it.first }) { (pkg, label) ->
+                            PickRow(pkg, label) { Apps.add(c, pkg); added = added + pkg; UiState.bump() }
+                        }
+                    }
+                    if (gameList.isNotEmpty()) {
+                        item { SectionTitle("Jeux", Modifier.padding(start = 8.dp)) }
+                        items(gameList, key = { it.first }) { (pkg, label) ->
                             PickRow(pkg, label) { Apps.add(c, pkg); added = added + pkg; UiState.bump() }
                         }
                     }

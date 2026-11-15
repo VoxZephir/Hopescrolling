@@ -275,13 +275,6 @@ private fun EquivalenceCard() {
                 }
                 Spacer(Modifier.height(12.dp))
             }
-            Text(
-                "Estimations : 2 min par vidéo bloquée, 5 min par appli refermée après la pause, " +
-                    "10 min par limite de fil atteinte, 5 min par tentative pendant le couvre-feu. " +
-                    items.joinToString(", ") { it.assumption } + ".",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -347,12 +340,7 @@ private fun FocusCard() {
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(30 to "30 min", 60 to "1 h", 120 to "2 h", 240 to "4 h").forEach { (m, l) ->
-                        FilledTonalButton(onClick = {
-                            val now = System.currentTimeMillis()
-                            Prefs.sp(c).edit().putLong("focus_start", now).apply()
-                            Prefs.setFocusUntil(c, now + m * 60_000L)
-                            UiState.bump()
-                        }) { Text(l) }
+                        FilledTonalButton(onClick = { Rules.startFocus(c, m); UiState.bump() }) { Text(l) }
                     }
                 }
             }
