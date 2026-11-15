@@ -17,9 +17,9 @@ object Prefs {
     fun isEnabled(c: Context, t: Target) = bool(c, "enabled_${t.name}", true)
     fun setEnabled(c: Context, t: Target, v: Boolean) = setBool(c, "enabled_${t.name}", v)
 
-    // --- Pause consciente ---
-    fun pauseEnabled(c: Context, pkg: String) = bool(c, "pause_$pkg", true)
-    fun setPauseEnabled(c: Context, pkg: String, v: Boolean) = setBool(c, "pause_$pkg", v)
+    /** Swipes autorisés dans un fil avant le retour à l'écran d'accueil. */
+    fun scrollBudget(c: Context) = int(c, "scroll_budget", 10)
+    fun setScrollBudget(c: Context, v: Int) = setInt(c, "scroll_budget", v)
 
     // --- Anti-triche ---
     fun lockEnabled(c: Context) = bool(c, "lock", false)

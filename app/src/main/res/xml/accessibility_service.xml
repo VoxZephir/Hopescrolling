@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Le service ne reçoit des événements QUE de ces applis. -->
+<!-- Le service reçoit les événements de toutes les applis et ignore celles qui ne sont pas surveillées. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
     android:accessibilityFeedbackType="feedbackGeneric"
@@ -7,5 +7,4 @@
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="true"
     android:description="@string/service_description"
-    android:notificationTimeout="100"
-    android:packageNames="com.google.android.youtube,com.instagram.android,com.zhiliaoapp.musically,com.ss.android.ugc.trill,com.brave.browser,com.brave.browser_beta,com.android.chrome,org.mozilla.firefox,com.duckduckgo.mobile.android,com.android.settings,com.google.android.packageinstaller,com.android.packageinstaller" />
+    android:notificationTimeout="100" />

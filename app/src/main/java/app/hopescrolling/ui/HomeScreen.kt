@@ -75,7 +75,7 @@ fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
                     Text(if (Rules.focusActive(c)) "🎯" else "🌙", fontSize = 28.sp)
                     Column(Modifier.padding(start = 16.dp)) {
                         Text(reason, style = MaterialTheme.typography.titleMedium)
-                        Text("Instagram, YouTube et TikTok sont fermés.",
+                        Text("Les applis surveillées sont fermées.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -149,7 +149,7 @@ private fun FocusCard() {
                 EmojiBadge("🎯")
                 Column(Modifier.padding(start = 16.dp)) {
                     Text("Mode concentration", style = MaterialTheme.typography.titleMedium)
-                    Text("Ferme Instagram, YouTube et TikTok pendant un moment.",
+                    Text("Ferme tes applis surveillées pendant un moment.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

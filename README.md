@@ -33,6 +33,18 @@ Tout se trouve dans `app/src/main/java/app/hopescrolling/` :
 - `BlockerService.kt` : la détection et l'action Retour
 - `MainActivity.kt` : l'écran d'état, les interrupteurs et le compteur
 
+## Applis surveillées
+
+N'importe quelle appli installée peut être surveillée (onglet Blocages → Ajouter une appli).
+Des suggestions mettent en avant les applis addictives : LinkedIn, Facebook, X, Reddit,
+Snapchat, Pinterest, Threads, Twitch, Vinted, Temu, Tinder… Pour chaque appli :
+- **Pause** à l'ouverture
+- **Limite de scroll** : N swipes sur les grandes listes (réglable : 5, 10, 20 ou 40), puis
+  retour à l'écran d'accueil. Le compteur repart à zéro après 15 min.
+- **Couvre-feu et concentration** : l'appli est fermée pendant ces périodes
+
+LinkedIn, Instagram et YouTube sont surveillées par défaut.
+
 ## Autres fonctions
 
 - **Pause consciente** : avant d'ouvrir Instagram ou YouTube, 8 secondes de respiration et

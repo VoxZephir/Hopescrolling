@@ -42,7 +42,7 @@ fun RulesScreen() {
         HopeCard {
             Column {
                 ToggleRow("🌙", "Couvre-feu",
-                    "Instagram, YouTube et TikTok sont fermés pendant ces heures.",
+                    "Les applis surveillées et TikTok sont fermés pendant ces heures.",
                     Prefs.curfewOn(c)) { on ->
                     if (on) { Prefs.setCurfewOn(c, true); UiState.bump() }
                     else Lock.guard(c, "désactiver le couvre-feu") { Prefs.setCurfewOn(c, false) }
@@ -58,6 +58,30 @@ fun RulesScreen() {
                     Text("→", style = MaterialTheme.typography.headlineSmall)
                     TimeBox("À", Prefs.curfewEnd(c), Modifier.weight(1f)) {
                         Lock.guard(c, "changer les horaires du couvre-feu") { pickTime(c, false) }
+                    }
+                }
+            }
+        }
+
+        SectionTitle("Limite de scroll")
+        HopeCard {
+            Column(Modifier.padding(20.dp)) {
+                val sb = Prefs.scrollBudget(c)
+                Text("$sb swipes par fil", style = MaterialTheme.typography.titleMedium)
+                Text("Pour les applis surveillées avec la limite de scroll, et le fil Instagram. Le compteur repart à zéro après 15 min sans scroller.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(12.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(5, 10, 20, 40).forEach { v ->
+                        FilterChip(
+                            selected = sb == v,
+                            onClick = {
+                                if (v > sb) Lock.guard(c, "autoriser plus de swipes") { Prefs.setScrollBudget(c, v) }
+                                else { Prefs.setScrollBudget(c, v); UiState.bump() }
+                            },
+                            label = { Text("$v") },
+                        )
                     }
                 }
             }

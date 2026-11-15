@@ -46,6 +46,9 @@ class BlockerService : AccessibilityService() {
         val pkg = event.packageName?.toString() ?: return
         if (pkg in SETTINGS_PKGS) { protectSettings(pkg); return }
         if (gate(pkg)) return
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
+            pkg in Apps.config(this).scroll
+        ) onGenericScroll(pkg, event)
         val targets = Target.forPackage(pkg)
         if (targets.isEmpty()) return
 
@@ -221,8 +224,33 @@ class BlockerService : AccessibilityService() {
         lastFeedScrollAt = now
 
         // Le compteur reste plein : chaque tentative relance les 15 min d'attente.
-        if (feedSwipes > FEED_SWIPE_BUDGET && now - lastActionAt > COOLDOWN_MS) {
+        if (feedSwipes > Prefs.scrollBudget(this) && now - lastActionAt > COOLDOWN_MS) {
             block(t, GLOBAL_ACTION_HOME, recheck = false, metric = Metric.FEED_LIMIT)
+        }
+    }
+
+    /** Swipes par appli : (nombre, dernier scroll). */
+    private val scrollState = mutableMapOf<String, Pair<Int, Long>>()
+
+    /**
+     * Limite de scroll générique (LinkedIn, Facebook, X…) : on compte les swipes
+     * sur les grandes listes. Au-delà du budget, retour à l'écran d'accueil.
+     * Le compteur repart à zéro après 15 min sans scroller dans cette appli.
+     */
+    private fun onGenericScroll(pkg: String, event: AccessibilityEvent) {
+        val src = event.source ?: return
+        val r = Rect().also { src.getBoundsInScreen(it) }
+        if (r.height() < resources.displayMetrics.heightPixels / 2) return
+        val now = SystemClock.uptimeMillis()
+        val (prev, last) = scrollState[pkg] ?: (0 to 0L)
+        var swipes = if (now - last > FEED_RESET_MS) 0 else prev
+        if (now - last > SWIPE_GAP_MS) swipes++
+        scrollState[pkg] = swipes to now
+        if (swipes > Prefs.scrollBudget(this) && now - lastActionAt > COOLDOWN_MS) {
+            lastActionAt = now
+            performGlobalAction(GLOBAL_ACTION_HOME)
+            Stats.record(this, Metric.FEED_LIMIT)
+            toast("${Apps.label(this, pkg)} : fil terminé pour l'instant 🌅")
         }
     }
 
@@ -265,7 +293,8 @@ class BlockerService : AccessibilityService() {
      */
     private fun gate(pkg: String): Boolean {
         val now = SystemClock.uptimeMillis()
-        if (pkg in LOCKDOWN_APPS) {
+        val cfg = Apps.config(this)
+        if (pkg in cfg.lockdown) {
             val reason = Rules.lockdownReason(this)
             if (reason != null) {
                 if (now - lastActionAt > COOLDOWN_MS) {
@@ -277,7 +306,7 @@ class BlockerService : AccessibilityService() {
                 return true
             }
         }
-        if (pkg !in PAUSE_APPS || !Prefs.pauseEnabled(this, pkg)) return false
+        if (pkg !in cfg.pause) return false
         if (Passes.has(pkg)) { Passes.extend(pkg); return false }
         if (Passes.pausingPkg == pkg && now - Passes.pausingSince < 30_000) return true
         // Uniquement si l'appli est vraiment au premier plan.

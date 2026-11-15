@@ -66,7 +66,7 @@ class PauseActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         pkg = intent.getStringExtra(EXTRA_PKG) ?: run { finish(); return }
-        val name = PAUSE_APPS[pkg] ?: "cette appli"
+        val name = Apps.label(this, pkg)
         val today = LocalDate.now()
         val opens = Stats.count(this, today, Metric.PAUSE_CONTINUE) +
             Stats.count(this, today, Metric.PAUSE_QUIT) + 1

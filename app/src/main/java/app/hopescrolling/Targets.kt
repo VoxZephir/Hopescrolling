@@ -57,7 +57,7 @@ enum class Target(
     INSTAGRAM_FEED(
         label = "Limite du fil Instagram",
         emoji = "🧱",
-        description = "$FEED_SWIPE_BUDGET swipes dans Accueil et Explorer, puis retour à l'écran d'accueil. Le compteur repart à zéro après 15 min.",
+        description = "Quelques swipes dans Accueil et Explorer (réglable dans Règles), puis retour à l'écran d'accueil.",
         toast = "Fil Instagram terminé pour l'instant 🌅",
         kind = Kind.FEED_LIMIT,
         packages = listOf(INSTAGRAM),
@@ -79,7 +79,7 @@ enum class Target(
         description = "L'appli entière : elle se referme dès qu'elle s'ouvre.",
         toast = "TikTok bloqué 🛑",
         kind = Kind.WHOLE_APP,
-        packages = listOf("com.zhiliaoapp.musically", "com.ss.android.ugc.trill"),
+        packages = TIKTOK_PKGS.toList(),
     ),
     BROWSER(
         label = "Dans le navigateur",
@@ -97,9 +97,6 @@ enum class Target(
 
 const val INSTAGRAM = "com.instagram.android"
 const val YOUTUBE = "com.google.android.youtube"
-
-/** Nombre de swipes autorisés dans le fil Instagram avant d'être renvoyé à l'accueil. */
-const val FEED_SWIPE_BUDGET = 10
 
 /** Le compteur de swipes repart à zéro après ce temps sans scroller le fil. */
 const val FEED_RESET_MS = 15 * 60 * 1000L

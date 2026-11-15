@@ -6,12 +6,6 @@ import java.text.DateFormat
 import java.time.LocalTime
 import java.util.Date
 
-/** Applis bloquées entièrement pendant le couvre-feu et le mode concentration. */
-val LOCKDOWN_APPS = setOf(INSTAGRAM, YOUTUBE, "com.zhiliaoapp.musically", "com.ss.android.ugc.trill")
-
-/** Applis qui peuvent avoir une pause consciente, avec leur nom affiché. */
-val PAUSE_APPS = linkedMapOf(INSTAGRAM to "Instagram", YOUTUBE to "YouTube")
-
 object Rules {
     fun fmt(minutes: Int) = "%02d:%02d".format(minutes / 60, minutes % 60)
 
