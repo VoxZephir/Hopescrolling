@@ -107,3 +107,9 @@ diagnostic**. Le diagnostic liste les IDs des vues visibles, sans le texte de te
   pas d'IDs stables.
 - On peut toujours désactiver le service dans les réglages. C'est une barrière de friction,
   pas une prison.
+
+## Play Store
+
+Une version Play Store (`play`) avec un abonnement Premium est prête à publier : voir
+[PLAYSTORE.md](PLAYSTORE.md). La version GitHub/Obtainium (`full`) reste entièrement gratuite.
+Politique de confidentialité : [docs/privacy.html](docs/privacy.html).

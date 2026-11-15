@@ -27,6 +27,37 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // Clé d'envoi Play Store : jamais dans le dépôt, fournie par la CI
+        // (secrets GitHub) ou par ta machine via des variables d'environnement.
+        System.getenv("UPLOAD_KEYSTORE_PATH")?.let { path ->
+            create("upload") {
+                storeFile = file(path)
+                storePassword = System.getenv("UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // Deux versions :
+    //  - full : GitHub / Obtainium, tout débloqué, sans paiement ni Internet ;
+    //  - play : Play Store, avec Premium (Google Play Billing).
+    flavorDimensions += "store"
+    productFlavors {
+        create("full") {
+            dimension = "store"
+            buildConfigField("boolean", "REQUIRE_PREMIUM", "false")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "REQUIRE_PREMIUM", "true")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
+        }
     }
 
     buildTypes {
@@ -36,7 +67,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -62,4 +92,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     // Icônes Material : R8 ne garde que celles utilisées.
     implementation("androidx.compose.material:material-icons-extended")
+    // Paiement Premium : uniquement dans la version Play Store.
+    "playImplementation"("com.android.billingclient:billing-ktx:7.1.1")
 }

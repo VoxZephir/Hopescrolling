@@ -55,18 +55,21 @@ fun BlocksScreen() {
     Column {
         ScreenHeader("Blocages", "Ce que Hopescrolling referme pour toi.")
 
+        PremiumBanner("Applis surveillées, jeux et limites sont inclus dans Premium.")
+
         SectionTitle("Applis surveillées")
         HopeCard {
             Column {
-                val apps = Apps.managed(c).filter { Apps.isInstalled(c, it) }
+                val apps = (if (app.hopescrolling.Premium.active(c)) Apps.managed(c) else Apps.preview(c))
+                    .filter { Apps.isInstalled(c, it) }
                     .sortedBy { Apps.label(c, it).lowercase() }
                 apps.forEachIndexed { i, pkg ->
                     if (i > 0) RowDivider()
-                    AppRow(pkg) { openApp = pkg }
+                    AppRow(pkg) { if (Paywall.require(c)) openApp = pkg }
                 }
                 if (apps.isNotEmpty()) RowDivider()
                 Row(
-                    Modifier.fillMaxWidth().clickable { adding = true }.padding(16.dp),
+                    Modifier.fillMaxWidth().clickable { if (Paywall.require(c)) adding = true }.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconBadge(Icons.Rounded.Add, container = MaterialTheme.colorScheme.primaryContainer, tint = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -83,8 +86,8 @@ fun BlocksScreen() {
             val games = remember { Apps.installedGames(c).size }
             ToggleRow(Icons.Rounded.SportsEsports, "Surveiller tous les jeux",
                 "$games jeu(x) installé(s). Les nouveaux jeux sont ajoutés automatiquement, avec 60 min par jour, la pause et le couvre-feu.",
-                Apps.allGames(c)) { on ->
-                if (on) { Apps.setAllGames(c, true); UiState.bump() }
+                Apps.allGames(c) && app.hopescrolling.Premium.active(c)) { on ->
+                if (on) { if (Paywall.require(c)) { Apps.setAllGames(c, true); UiState.bump() } }
                 else Lock.guard(c, "ne plus surveiller les jeux") { Apps.setAllGames(c, false) }
             }
         }
@@ -95,7 +98,7 @@ fun BlocksScreen() {
                 Target.entries.forEachIndexed { i, t ->
                     if (i > 0) RowDivider()
                     ToggleRow(iconFor(t), t.label, t.description, Prefs.isEnabled(c, t)) { on ->
-                        if (on) { Prefs.setEnabled(c, t, true); UiState.bump() }
+                        if (on) { if (!t.premium || Paywall.require(c)) { Prefs.setEnabled(c, t, true); UiState.bump() } }
                         else Lock.guard(c, "désactiver « ${t.label} »") { Prefs.setEnabled(c, t, false) }
                     }
                 }

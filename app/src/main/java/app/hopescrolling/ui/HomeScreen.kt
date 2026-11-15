@@ -340,7 +340,9 @@ private fun FocusCard() {
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(30 to "30 min", 60 to "1 h", 120 to "2 h", 240 to "4 h").forEach { (m, l) ->
-                        FilledTonalButton(onClick = { Rules.startFocus(c, m); UiState.bump() }) { Text(l) }
+                        FilledTonalButton(onClick = {
+                            if (Paywall.require(c)) { Rules.startFocus(c, m); UiState.bump() }
+                        }) { Text(l) }
                     }
                 }
             }

@@ -88,7 +88,7 @@ fun Onboarding(serviceOn: Boolean, onDone: () -> Unit) {
                         "Hopescrolling referme les Shorts, les Reels et TikTok à ta place, sans bloquer le reste de tes applis.\n\nTu gardes YouTube pour les vidéos que tu cherches, et Instagram pour tes potes et tes messages.")
                     1 -> {
                         Page(Icons.Rounded.AccessibilityNew, "Active le service",
-                            "Hopescrolling utilise un service d'accessibilité pour voir quel écran est affiché et appuyer sur Retour à ta place.\n\nIl voit les changements d'écran mais n'agit que sur les applis que tu choisis. Il n'a pas accès à Internet : rien ne quitte ton téléphone.")
+                            "Hopescrolling utilise un service d'accessibilité pour voir quel écran est affiché et appuyer sur Retour à ta place.\n\nIl voit les changements d'écran mais n'agit que sur les applis que tu choisis. Rien ne quitte ton téléphone : aucune donnée n'est collectée ni partagée.")
                         Spacer(Modifier.height(24.dp))
                         Tip("1", "Appuie sur « Ouvrir l'accessibilité », choisis Hopescrolling et active-le.")
                         Tip("2", "Option grisée ? Ouvre les infos de l'appli, appuie sur ⋮ en haut à droite, puis sur « Autoriser les paramètres restreints ».")
@@ -108,7 +108,7 @@ fun Onboarding(serviceOn: Boolean, onDone: () -> Unit) {
                 when (step) {
                     0 -> step = 1
                     1 -> if (serviceOn) step = 2
-                        else c.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        else Disclosure.openAccessibility(c)
                     else -> onDone()
                 }
             },

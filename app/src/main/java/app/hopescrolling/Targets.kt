@@ -25,6 +25,8 @@ enum class Target(
     val kind: Kind,
     val packages: List<String>,
     val viewIds: List<String> = emptyList(),
+    /** Réservé à Premium dans la version Play Store. */
+    val premium: Boolean = false,
 ) {
     YOUTUBE_SHORTS(
         label = "YouTube Shorts",
@@ -59,6 +61,7 @@ enum class Target(
         packages = listOf(INSTAGRAM),
         // Onglets de la barre du bas où le scroll est limité.
         viewIds = listOf("feed_tab", "search_tab"),
+        premium = true,
     ),
     INSTAGRAM_SUGGESTED(
         label = "Pubs et suggestions Instagram",
@@ -67,6 +70,7 @@ enum class Target(
         kind = Kind.SKIP_POSTS,
         packages = listOf(INSTAGRAM),
         viewIds = listOf("feed_tab"),
+        premium = true,
     ),
     TIKTOK(
         label = "TikTok",

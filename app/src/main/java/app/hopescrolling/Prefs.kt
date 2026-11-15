@@ -14,7 +14,8 @@ object Prefs {
     private fun setInt(c: Context, k: String, v: Int) = sp(c).edit().putInt(k, v).apply()
 
     // --- Blocages ---
-    fun isEnabled(c: Context, t: Target) = bool(c, "enabled_${t.name}", true)
+    fun isEnabled(c: Context, t: Target) =
+        bool(c, "enabled_${t.name}", true) && (!t.premium || Premium.active(c))
     fun setEnabled(c: Context, t: Target, v: Boolean) = setBool(c, "enabled_${t.name}", v)
 
     /** Swipes autorisés dans un fil avant le retour à l'écran d'accueil. */
@@ -22,13 +23,13 @@ object Prefs {
     fun setScrollBudget(c: Context, v: Int) = setInt(c, "scroll_budget", v)
 
     // --- Anti-triche ---
-    fun lockEnabled(c: Context) = bool(c, "lock", false)
+    fun lockEnabled(c: Context) = bool(c, "lock", false) && Premium.active(c)
     fun setLockEnabled(c: Context, v: Boolean) = setBool(c, "lock", v)
-    fun protection(c: Context) = bool(c, "protect", false)
+    fun protection(c: Context) = bool(c, "protect", false) && Premium.active(c)
     fun setProtection(c: Context, v: Boolean) = setBool(c, "protect", v)
 
     // --- Règles horaires ---
-    fun curfewOn(c: Context) = bool(c, "curfew", false)
+    fun curfewOn(c: Context) = bool(c, "curfew", false) && Premium.active(c)
     fun setCurfewOn(c: Context, v: Boolean) = setBool(c, "curfew", v)
     /** En minutes depuis minuit. */
     fun curfewStart(c: Context) = int(c, "curfew_start", 23 * 60)
@@ -37,11 +38,11 @@ object Prefs {
         sp(c).edit().putInt("curfew_start", start).putInt("curfew_end", end).apply()
 
     /** Minutes de Shorts/Reels autorisées par jour (0 = toujours bloqués). */
-    fun shortsBudgetMin(c: Context) = int(c, "shorts_budget", 0)
+    fun shortsBudgetMin(c: Context) = if (Premium.active(c)) int(c, "shorts_budget", 0) else 0
     fun setShortsBudgetMin(c: Context, v: Int) = setInt(c, "shorts_budget", v)
 
     /** Fin du mode concentration (epoch ms), 0 si inactif. */
-    fun focusUntil(c: Context) = sp(c).getLong("focus_until", 0L)
+    fun focusUntil(c: Context) = if (Premium.active(c)) sp(c).getLong("focus_until", 0L) else 0L
     fun setFocusUntil(c: Context, v: Long) = sp(c).edit().putLong("focus_until", v).apply()
 
     // --- Mode diagnostic ---

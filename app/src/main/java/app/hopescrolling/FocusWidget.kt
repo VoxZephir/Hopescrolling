@@ -17,7 +17,7 @@ class FocusWidget : AppWidgetProvider() {
 
     override fun onReceive(c: Context, intent: Intent) {
         super.onReceive(c, intent)
-        if (intent.action == ACTION_START && !Rules.focusActive(c)) {
+        if (intent.action == ACTION_START && !Rules.focusActive(c) && Premium.active(c)) {
             Rules.startFocus(c, 60)
         }
     }

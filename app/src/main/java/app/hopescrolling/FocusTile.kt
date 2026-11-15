@@ -14,7 +14,7 @@ class FocusTile : TileService() {
     override fun onStartListening() = update()
 
     override fun onClick() {
-        if (!Rules.focusActive(this)) {
+        if (!Rules.focusActive(this) && Premium.active(this)) {
             Rules.startFocus(this, 60)
             update()
         } else {

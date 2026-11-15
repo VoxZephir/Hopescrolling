@@ -17,7 +17,9 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -35,20 +37,32 @@ fun SettingsScreen(serviceOn: Boolean) {
     Column {
         ScreenHeader("Réglages", "Anti-triche, mises à jour et diagnostic.")
 
+        if (app.hopescrolling.BuildConfig.REQUIRE_PREMIUM) {
+            SectionTitle("Premium")
+            HopeCard {
+                ActionRow(
+                    Icons.Rounded.WorkspacePremium,
+                    if (app.hopescrolling.Premium.active(c)) "Premium actif" else "Passer à Premium",
+                    if (app.hopescrolling.Premium.active(c)) "Merci de soutenir Hopescrolling"
+                    else "Pause, limites, couvre-feu, verrou et plus",
+                ) { Paywall.visible = true }
+            }
+        }
+
         SectionTitle("Anti-triche")
         HopeCard {
             Column {
                 ToggleRow(Icons.Rounded.Lock, "Verrou",
                     "Pour assouplir une règle : attendre 30 s et recopier « ${Lock.PHRASE} ».",
                     Prefs.lockEnabled(c)) { on ->
-                    if (on) { Prefs.setLockEnabled(c, true); UiState.bump() }
+                    if (on) { if (Paywall.require(c)) { Prefs.setLockEnabled(c, true); UiState.bump() } }
                     else Lock.guard(c, "désactiver le verrou") { Prefs.setLockEnabled(c, false) }
                 }
                 divider()
                 ToggleRow(Icons.Rounded.Shield, "Protection des réglages",
                     "Empêche de désactiver le service, de forcer l'arrêt ou de désinstaller Hopescrolling.",
                     Prefs.protection(c)) { on ->
-                    if (on) { Prefs.setProtection(c, true); UiState.bump() }
+                    if (on) { if (Paywall.require(c)) { Prefs.setProtection(c, true); UiState.bump() } }
                     else Lock.guard(c, "désactiver la protection") { Prefs.setProtection(c, false) }
                 }
             }
@@ -61,7 +75,7 @@ fun SettingsScreen(serviceOn: Boolean) {
                 if (serviceOn) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber,
                 if (serviceOn) "Service d'accessibilité actif" else "Service d'accessibilité inactif",
                 "Ouvrir les réglages d'accessibilité",
-            ) { c.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            ) { Disclosure.openAccessibility(c) }
         }
 
         SectionTitle("Mises à jour")
@@ -105,7 +119,13 @@ fun SettingsScreen(serviceOn: Boolean) {
                 }
             }
         }
-        Hint("Hopescrolling n'a pas accès à Internet : rien ne quitte ton téléphone.")
+        SectionTitle("Confidentialité")
+        HopeCard {
+            ActionRow(Icons.Rounded.PrivacyTip, "Politique de confidentialité",
+                "Rien ne quitte ton téléphone") {
+                c.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
+            }
+        }
         Spacer(Modifier.height(16.dp))
     }
 }

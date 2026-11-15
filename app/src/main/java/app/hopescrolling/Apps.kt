@@ -80,7 +80,8 @@ object Apps {
     fun invalidate() { cache = null }
 
     private fun build(c: Context): Config {
-        val m = computeManaged(c)
+        // Sans Premium (version Play Store), les applis surveillées n'ont aucune règle.
+        val m = if (Premium.active(c)) computeManaged(c) else emptySet()
         return Config(
             managed = m,
             pause = m.filter { pause(c, it) }.toSet(),
@@ -90,6 +91,9 @@ object Apps {
             builtAt = SystemClock.uptimeMillis(),
         )
     }
+
+    /** Applis choisies, même sans Premium (pour les afficher verrouillées). */
+    fun preview(c: Context): Set<String> = explicit(c)
 
     /** Applis surveillées : choisies à la main, plus tous les jeux si l'option est activée. */
     fun managed(c: Context): Set<String> = config(c).managed

@@ -36,7 +36,9 @@ import app.hopescrolling.ui.BlocksScreen
 import app.hopescrolling.ui.HomeScreen
 import app.hopescrolling.ui.HopeTheme
 import app.hopescrolling.ui.Lock as LockGate
+import app.hopescrolling.ui.Disclosure
 import app.hopescrolling.ui.Onboarding
+import app.hopescrolling.ui.Paywall
 import app.hopescrolling.ui.RulesScreen
 import app.hopescrolling.ui.SettingsScreen
 import app.hopescrolling.ui.UiState
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        StoreFactory.store.connect(this) // version Play Store : prix et achats
         setContent {
             HopeTheme {
                 UiState.version
@@ -62,6 +65,8 @@ class MainActivity : ComponentActivity() {
                     Main(serviceOn)
                 }
                 LockGate.Host()
+                Paywall.Host()
+                Disclosure.Host()
             }
         }
     }
@@ -100,9 +105,7 @@ class MainActivity : ComponentActivity() {
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     when (t) {
-                        0 -> HomeScreen(serviceOn) {
-                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                        }
+                        0 -> HomeScreen(serviceOn) { Disclosure.openAccessibility(this@MainActivity) }
                         1 -> BlocksScreen()
                         2 -> RulesScreen()
                         else -> SettingsScreen(serviceOn)

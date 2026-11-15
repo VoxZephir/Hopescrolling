@@ -39,6 +39,7 @@ fun RulesScreen() {
     UiState.version
     Column {
         ScreenHeader("Règles", "Des limites qui s'appliquent toutes seules.")
+        PremiumBanner("Couvre-feu, limite de scroll et budget Shorts sont inclus dans Premium.")
 
         SectionTitle("Couvre-feu")
         HopeCard {
@@ -46,7 +47,7 @@ fun RulesScreen() {
                 ToggleRow(Icons.Rounded.Bedtime, "Couvre-feu",
                     "Les applis surveillées et TikTok sont fermés pendant ces heures.",
                     Prefs.curfewOn(c)) { on ->
-                    if (on) { Prefs.setCurfewOn(c, true); UiState.bump() }
+                    if (on) { if (Paywall.require(c)) { Prefs.setCurfewOn(c, true); UiState.bump() } }
                     else Lock.guard(c, "désactiver le couvre-feu") { Prefs.setCurfewOn(c, false) }
                 }
                 Row(
@@ -55,11 +56,11 @@ fun RulesScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TimeBox("De", Prefs.curfewStart(c), Modifier.weight(1f)) {
-                        Lock.guard(c, "changer les horaires du couvre-feu") { pickTime(c, true) }
+                        if (Paywall.require(c)) Lock.guard(c, "changer les horaires du couvre-feu") { pickTime(c, true) }
                     }
                     Text("→", style = MaterialTheme.typography.headlineSmall)
                     TimeBox("À", Prefs.curfewEnd(c), Modifier.weight(1f)) {
-                        Lock.guard(c, "changer les horaires du couvre-feu") { pickTime(c, false) }
+                        if (Paywall.require(c)) Lock.guard(c, "changer les horaires du couvre-feu") { pickTime(c, false) }
                     }
                 }
             }
@@ -79,8 +80,10 @@ fun RulesScreen() {
                         FilterChip(
                             selected = sb == v,
                             onClick = {
-                                if (v > sb) Lock.guard(c, "autoriser plus de swipes") { Prefs.setScrollBudget(c, v) }
-                                else { Prefs.setScrollBudget(c, v); UiState.bump() }
+                                if (Paywall.require(c)) {
+                                    if (v > sb) Lock.guard(c, "autoriser plus de swipes") { Prefs.setScrollBudget(c, v) }
+                                    else { Prefs.setScrollBudget(c, v); UiState.bump() }
+                                }
                             },
                             label = { Text("$v") },
                         )
@@ -106,8 +109,10 @@ fun RulesScreen() {
                         FilterChip(
                             selected = budget == v,
                             onClick = {
-                                if (v > budget) Lock.guard(c, "augmenter ton budget") { Prefs.setShortsBudgetMin(c, v) }
-                                else { Prefs.setShortsBudgetMin(c, v); UiState.bump() }
+                                if (Paywall.require(c)) {
+                                    if (v > budget) Lock.guard(c, "augmenter ton budget") { Prefs.setShortsBudgetMin(c, v) }
+                                    else { Prefs.setShortsBudgetMin(c, v); UiState.bump() }
+                                }
                             },
                             label = { Text(if (v == 0) "Aucun" else "$v min") },
                         )

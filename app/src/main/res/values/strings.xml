@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Hopescrolling</string>
     <string name="service_label">Hopescrolling – bloqueur de Shorts</string>
-    <string name="service_description">Referme les Shorts, Reels et TikTok, et applique tes règles (pause, limite de scroll, couvre-feu) aux applis que tu surveilles. Rien n\'est envoyé nulle part : l\'appli n\'a pas accès à Internet.</string>
+    <string name="service_description">Referme les Shorts, Reels et TikTok, et applique tes règles (pause, limite de scroll, couvre-feu) aux applis que tu surveilles. Rien n\'est envoyé nulle part : aucune donnée n\'est collectée ni partagée.</string>
     <string name="diag_title">Mode diagnostic</string>
     <string name="diag_help">Si un écran n\'est pas bloqué : active ce mode, ouvre l\'écran en question quelques secondes, reviens ici et copie le diagnostic. Il liste les identifiants des vues (pas le texte de tes messages ; seulement l\'URL dans les navigateurs).</string>
     <string name="diag_switch">Enregistrer les écrans</string>
