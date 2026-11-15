@@ -2,8 +2,13 @@
 <resources>
     <string name="app_name">Hopescrolling</string>
     <string name="service_label">Hopescrolling – bloqueur de Shorts</string>
-    <string name="service_description">Détecte l\'écran YouTube Shorts / Instagram Reels / TikTok et appuie sur Retour à ta place. Ne lit que ces applis, rien n\'est envoyé nulle part.</string>
-    <string name="blocked_toast">%1$s bloqué 🛑</string>
+    <string name="service_description">Détecte les Shorts, Reels et TikTok (applis et navigateur) et appuie sur Retour à ta place. Ne lit que ces applis, rien n\'est envoyé nulle part.</string>
+    <string name="diag_title">Mode diagnostic</string>
+    <string name="diag_help">Si un écran n\'est pas bloqué : active ce mode, ouvre l\'écran en question quelques secondes, reviens ici et copie le diagnostic. Il liste les identifiants des vues (pas le texte de tes messages ; seulement l\'URL dans les navigateurs).</string>
+    <string name="diag_switch">Enregistrer les écrans</string>
+    <string name="diag_copy">Copier le diagnostic</string>
+    <string name="diag_copied">Diagnostic copié dans le presse-papiers</string>
+    <string name="diag_empty">Rien d\'enregistré pour l\'instant : active le mode puis ouvre l\'appli à analyser.</string>
     <string name="tagline">Arrête de scroller. Le reste de tes applis marche normalement.</string>
     <string name="status_on">✅ Blocage actif</string>
     <string name="status_off">⚠️ Blocage inactif — active le service d\'accessibilité</string>

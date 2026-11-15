@@ -1,6 +1,8 @@
 # Hopescrolling
 
-Bloque **YouTube Shorts**, **Instagram Reels** et **TikTok** sans bloquer le reste des applis.
+Bloque **YouTube Shorts**, **Instagram Reels** et **TikTok**, dans les applis comme dans le
+navigateur (Brave, Chrome, Firefox, DuckDuckGo), et limite le scroll du fil Instagram.
+Le reste des applis marche normalement.
 C'est une app Android minimaliste, sans pub et sans réseau : elle n'a même pas la permission INTERNET.
 
 ## Comment ça marche
@@ -15,6 +17,13 @@ Les applis du type « bloqueur de Shorts » utilisent toutes la même technique 
    ou `com.instagram.android:id/clips_viewer_view_pager`).
 3. S'il le trouve, il simule le bouton **Retour**. TikTok étant fait entièrement de scroll
    infini, il renvoie simplement à l'écran d'accueil.
+
+Deux cas particuliers :
+- **Navigateurs** : le service lit l'URL dans la barre d'adresse et fait Retour sur
+  `youtube.com/shorts`, `instagram.com/reel(s)` et `tiktok.com`.
+- **Fil Instagram et Explorer** : 10 swipes sont autorisés, puis retour à l'écran d'accueil.
+  Le compteur repart à zéro après 15 minutes sans scroller le fil. Ces valeurs se règlent
+  dans `Targets.kt` (`FEED_SWIPE_BUDGET`, `FEED_RESET_MS`).
 
 Tout se trouve dans `app/src/main/java/app/hopescrolling/` :
 - `Targets.kt` : les applis visées et les IDs de vue à détecter
@@ -39,7 +48,13 @@ Pour compiler en local avec le SDK Android : `./gradlew assembleDebug`.
 
 ## Quand une mise à jour de YouTube ou d'Instagram casse la détection
 
-Les IDs de vue peuvent changer d'une version à l'autre. Pour trouver les nouveaux :
+Les IDs de vue peuvent changer d'une version à l'autre.
+
+**Sans ordinateur** : active le **Mode diagnostic** dans l'appli, ouvre l'écran qui n'est pas
+bloqué pendant quelques secondes, reviens dans Hopescrolling et appuie sur **Copier le
+diagnostic**. Le diagnostic liste les IDs des vues visibles, sans le texte de tes messages.
+
+**Avec un ordinateur (adb)** :
 
 1. Active le **débogage USB** et branche le téléphone (`adb devices` doit l'afficher).
 2. Ouvre un Short ou un Reel, puis lance `./tools/dump_view_ids.sh`.
@@ -48,7 +63,6 @@ Les IDs de vue peuvent changer d'une version à l'autre. Pour trouver les nouvea
 
 ## Limites
 
-- Les Shorts ouverts dans un navigateur (m.youtube.com/shorts) ne sont pas bloqués.
 - Les Reels de Facebook et Snapchat Spotlight ne sont pas encore gérés : leurs vues n'ont
   pas d'IDs stables.
 - On peut toujours désactiver le service dans les réglages. C'est une barrière de friction,

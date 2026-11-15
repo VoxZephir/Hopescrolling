@@ -29,4 +29,21 @@ object Prefs {
     }
 
     fun totalCount(c: Context) = sp(c).getInt("total", 0)
+
+    // --- Mode diagnostic ---
+    fun diagnostic(c: Context) = sp(c).getBoolean("diag", false)
+    fun setDiagnostic(c: Context, v: Boolean) = sp(c).edit().putBoolean("diag", v).apply()
+
+    fun saveDump(c: Context, pkg: String, dump: String) =
+        sp(c).edit().putString("dump_$pkg", "${java.time.LocalTime.now().withNano(0)}\n$dump").apply()
+
+    fun allDumps(c: Context): String =
+        sp(c).all.filterKeys { it.startsWith("dump_") }.entries
+            .joinToString("\n") { (k, v) -> "===== ${k.removePrefix("dump_")} @ $v" }
+
+    fun clearDumps(c: Context) {
+        val e = sp(c).edit()
+        sp(c).all.keys.filter { it.startsWith("dump_") }.forEach { e.remove(it) }
+        e.apply()
+    }
 }

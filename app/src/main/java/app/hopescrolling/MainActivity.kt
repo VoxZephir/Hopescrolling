@@ -1,6 +1,8 @@
 package app.hopescrolling
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +11,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
 
@@ -36,6 +39,25 @@ class MainActivity : Activity() {
                 setOnCheckedChangeListener { _, on -> Prefs.setEnabled(this@MainActivity, t, on) }
             }
             list.addView(sw)
+        }
+
+        @Suppress("DEPRECATION")
+        findViewById<Switch>(R.id.diag_switch).apply {
+            isChecked = Prefs.diagnostic(this@MainActivity)
+            setOnCheckedChangeListener { _, on ->
+                Prefs.setDiagnostic(this@MainActivity, on)
+                if (on) Prefs.clearDumps(this@MainActivity)
+            }
+        }
+        findViewById<Button>(R.id.diag_copy).setOnClickListener {
+            val dumps = Prefs.allDumps(this)
+            if (dumps.isBlank()) {
+                Toast.makeText(this, R.string.diag_empty, Toast.LENGTH_LONG).show()
+            } else {
+                getSystemService(ClipboardManager::class.java)
+                    .setPrimaryClip(ClipData.newPlainText("Hopescrolling diagnostic", dumps))
+                Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
