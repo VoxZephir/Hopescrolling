@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.PrivacyTip
+import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +77,17 @@ fun SettingsScreen(serviceOn: Boolean) {
                 if (serviceOn) "Service d'accessibilité actif" else "Service d'accessibilité inactif",
                 "Ouvrir les réglages d'accessibilité",
             ) { Disclosure.openAccessibility(c) }
+        }
+
+        SectionTitle("Mesure")
+        HopeCard {
+            val ok = app.hopescrolling.DeviceUsage.granted(c)
+            ActionRow(
+                Icons.Rounded.QueryStats,
+                if (ok) "Accès aux données d'utilisation activé" else "Accès aux données d'utilisation",
+                if (ok) "Le temps récupéré est mesuré par Android"
+                else "Nécessaire pour mesurer le temps récupéré",
+            ) { c.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
         }
 
         SectionTitle("Mises à jour")

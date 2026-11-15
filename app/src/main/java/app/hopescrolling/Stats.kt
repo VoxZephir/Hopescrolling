@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 /** Ce qu'on compte, jour par jour. */
 enum class Metric(
-    /** Minutes récupérées estimées par occurrence. */
+    /** (Ancienne estimation forfaitaire, plus utilisée : le temps récupéré est mesuré.) */
     val minutes: Int,
     /** Est-ce que ça veut dire qu'on a "craqué" ce jour-là (casse la série) ? */
     val breaksStreak: Boolean = false,
@@ -38,11 +38,28 @@ object Stats {
         Prefs.sp(c).all.entries.filter { it.key.startsWith("d_") && it.key.endsWith("_${m.name}") }
             .sumOf { (it.value as? Int) ?: 0 }
 
-    /** Estimation des minutes récupérées un jour donné. */
-    fun minutesSaved(c: Context, day: LocalDate) =
-        Metric.entries.sumOf { count(c, day, it) * it.minutes }
+    /**
+     * Minutes récupérées un jour donné, mesurées par Android (voir DeviceUsage).
+     * Les jours passés sont mémorisés : Android n'en garde l'historique que
+     * quelques jours.
+     */
+    fun minutesSaved(c: Context, day: LocalDate): Int {
+        val p = Prefs.sp(c)
+        val key = "saved_$day"
+        if (day.isBefore(LocalDate.now()) && p.contains(key)) return p.getInt(key, 0)
+        if (!DeviceUsage.granted(c)) return 0
+        val v = runCatching { DeviceUsage.saved(c, day) }.getOrDefault(0)
+        if (day.isBefore(LocalDate.now())) p.edit().putInt(key, v).apply()
+        return v
+    }
 
-    fun totalMinutesSaved(c: Context) = Metric.entries.sumOf { total(c, it) * it.minutes }
+    fun totalMinutesSaved(c: Context): Int {
+        val first = Prefs.sp(c).getString("first_day", null)?.let(LocalDate::parse) ?: LocalDate.now()
+        var d = first
+        var sum = 0
+        while (!d.isAfter(LocalDate.now())) { sum += minutesSaved(c, d); d = d.plusDays(1) }
+        return sum
+    }
 
     private fun goodDay(c: Context, day: LocalDate) =
         Metric.entries.filter { it.breaksStreak }.all { count(c, day, it) == 0 }
@@ -71,6 +88,12 @@ object Stats {
 
     /** Minutes passées par appli un jour donné, de la plus utilisée à la moins utilisée. */
     fun screenByApp(c: Context, day: LocalDate): List<Pair<String, Int>> {
+        if (DeviceUsage.granted(c)) {
+            val t = DeviceUsage.tracked(c)
+            return DeviceUsage.usage(c, day).filterKeys { it in t }
+                .map { it.key to (it.value / 60_000L).toInt() }
+                .filter { it.second > 0 }.sortedByDescending { it.second }
+        }
         val prefix = "st_${day}_"
         return Prefs.sp(c).all.entries
             .filter { it.key.startsWith(prefix) }
@@ -83,6 +106,7 @@ object Stats {
         Prefs.sp(c).getLong(screenKey(LocalDate.now(), pkg), 0L)
 
     fun screenMinutes(c: Context, day: LocalDate): Int {
+        if (DeviceUsage.granted(c)) return DeviceUsage.trackedMinutes(c, day)
         val prefix = "st_${day}_"
         val ms = Prefs.sp(c).all.entries.filter { it.key.startsWith(prefix) }
             .sumOf { (it.value as? Long) ?: 0L }

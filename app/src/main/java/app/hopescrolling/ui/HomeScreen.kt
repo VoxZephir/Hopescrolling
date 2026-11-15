@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.CenterFocusStrong
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.hopescrolling.Apps
+import app.hopescrolling.DeviceUsage
 import app.hopescrolling.Equivalence
 import app.hopescrolling.Metric
 import app.hopescrolling.Prefs
@@ -93,6 +95,7 @@ fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
         }
 
         HeroCard(serviceOn, Stats.minutesSaved(c, today), onEnable)
+        if (serviceOn && !DeviceUsage.granted(c)) UsageAccessCard()
 
         Rules.lockdownReason(c)?.let { reason ->
             HopeCard {
@@ -120,6 +123,29 @@ fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
         FocusCard()
         PauseCard()
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** Demande l'accès aux statistiques d'utilisation, nécessaire pour mesurer le temps récupéré. */
+@Composable
+private fun UsageAccessCard() {
+    val c = LocalContext.current
+    HopeCard {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Rounded.QueryStats)
+                Column(Modifier.padding(start = 16.dp)) {
+                    Text("Mesurer ton temps récupéré", style = MaterialTheme.typography.titleMedium)
+                    Text("Hopescrolling compare ton temps sur ces applis à ta moyenne avant de l'installer, grâce aux statistiques d'Android. Rien ne quitte ton téléphone.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            FilledTonalButton(onClick = {
+                c.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            }) { Text("Autoriser l'accès") }
+        }
     }
 }
 
@@ -166,8 +192,15 @@ private fun HeroCard(serviceOn: Boolean, saved: Int, onEnable: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         Text(formatDuration(saved), style = MaterialTheme.typography.displayMedium,
             color = cs.onPrimaryContainer)
+        val c = LocalContext.current
+        val base = if (DeviceUsage.granted(c)) DeviceUsage.baseline(c) else null
         Text(
-            if (saved > 0) "Soit ${Equivalence.short(saved)}." else "La journée commence. Chaque blocage compte.",
+            when {
+                !DeviceUsage.granted(c) -> "Autorise l'accès aux données d'utilisation pour le mesurer."
+                base == null -> "Android n'a pas encore assez d'historique pour comparer."
+                saved > 0 -> "Soit ${Equivalence.short(saved)}, par rapport à ta moyenne d'avant (${formatDuration(base)} par jour)."
+                else -> "Ta moyenne d'avant : ${formatDuration(base)} par jour sur ces applis."
+            },
             style = MaterialTheme.typography.bodyLarge,
             color = cs.onPrimaryContainer.copy(alpha = 0.8f),
         )
@@ -264,7 +297,7 @@ private fun EquivalenceCard() {
     HopeCard {
         Column(Modifier.padding(20.dp)) {
             Text("Depuis le début", style = MaterialTheme.typography.titleMedium)
-            Text("${formatDuration(total)} récupérées, c'est l'équivalent de :",
+            Text("${formatDuration(total)} récupérées par rapport à ta moyenne d'avant, c'est l'équivalent de :",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))

@@ -49,6 +49,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         StoreFactory.store.connect(this) // version Play Store : prix et achats
+        Prefs.sp(this).let { p ->
+            if (!p.contains("first_day")) p.edit().putString("first_day", java.time.LocalDate.now().toString()).apply()
+        }
         setContent {
             HopeTheme {
                 UiState.version

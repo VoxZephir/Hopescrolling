@@ -112,18 +112,18 @@ class BlockerService : AccessibilityService() {
     private fun skipSuggested(root: AccessibilityNodeInfo) {
         val now = SystemClock.uptimeMillis()
         if (skipping || now - lastSkipAt < SKIP_COOLDOWN_MS) return
-        val onHome = Target.INSTAGRAM_SUGGESTED.viewIds.any { id ->
-            root.visible("$INSTAGRAM:id/$id").any { it.isSelected }
-        }
-        if (!onHome) return
+        // Instagram n'expose pas l'onglet sélectionné : on reconnaît le fil à ses
+        // posts (en-tête « row_feed ») avec la barre d'onglets visible.
+        if (!onInstagramFeed(root)) return
 
         val screenH = resources.displayMetrics.heightPixels
-        val markers = SUGGESTED_MARKERS.asSequence()
-            .flatMap { root.findAccessibilityNodeInfosByText(it).asSequence() }
+        val markers = (SUGGESTED_SEARCH.asSequence()
+            .flatMap { root.findAccessibilityNodeInfosByText(it).asSequence() } +
+            root.findAccessibilityNodeInfosByViewId("$INSTAGRAM:id/inline_follow_button").asSequence())
             .filter { it.isVisibleToUser }
             .filter { n ->
-                val txt = (n.text ?: n.contentDescription)?.toString()?.trim()?.lowercase()
-                txt in SUGGESTED_MARKERS
+                n.viewIdResourceName?.endsWith(":id/inline_follow_button") == true ||
+                    isSuggestedMarker(n.text) || isSuggestedMarker(n.contentDescription)
             }
             .mapNotNull { n -> feedListOf(n, screenH)?.let { Rect().also { r -> n.getBoundsInScreen(r) } to it } }
             .sortedBy { it.first.top }
@@ -149,6 +149,11 @@ class BlockerService : AccessibilityService() {
         repeat(count) { Stats.record(this, Metric.SKIP) }
         swipeUp(l, end - l.top)
     }
+
+    private fun onInstagramFeed(root: AccessibilityNodeInfo): Boolean =
+        root.visible("$INSTAGRAM:id/feed_tab").isNotEmpty() &&
+            (root.visible("$INSTAGRAM:id/row_feed_profile_header").isNotEmpty() ||
+                root.visible("$INSTAGRAM:id/row_feed_photo_profile_name").isNotEmpty())
 
     /** Remonte vers le parent jusqu'à la grande liste qui défile (le fil). */
     private fun feedListOf(n: AccessibilityNodeInfo, screenH: Int): AccessibilityNodeInfo? {
@@ -226,9 +231,9 @@ class BlockerService : AccessibilityService() {
 
         // Uniquement si on est sur l'onglet Accueil ou Explorer.
         val root = rootInActiveWindow ?: return
-        val onFeed = t.viewIds.any { id ->
-            root.visible("$INSTAGRAM:id/$id").any { it.isSelected }
-        }
+        // Onglets principaux (barre du bas visible), hors lecteur de Reels.
+        val onFeed = root.visible("$INSTAGRAM:id/feed_tab").isNotEmpty() &&
+            root.visible("$INSTAGRAM:id/clips_viewer_view_pager").isEmpty()
         if (!onFeed) return
 
         val now = SystemClock.uptimeMillis()

@@ -119,7 +119,23 @@ val BLOCKED_URLS: List<Regex> = listOf(
  */
 val SUGGESTED_MARKERS: Set<String> = setOf(
     "sponsorisé", "sponsorisée", "sponsored", "publicité",
-    "suggestions pour vous", "suggéré pour vous", "suggested for you",
-    "publications suggérées", "suggested posts",
+    "suggestions", "suggestion", "suggestions pour vous", "suggéré pour vous", "suggested for you",
+    "publications suggérées", "suggested posts", "suggested",
     "suivre", "follow",
 )
+
+/** Mots cherchés dans l'écran (recherche par sous-chaîne), filtrés ensuite par [isSuggestedMarker]. */
+val SUGGESTED_SEARCH = listOf("sponsoris", "sponsored", "publicité", "suggest", "suggér", "suivre", "follow")
+
+/**
+ * Texte d'un élément qui signale un post d'un compte non suivi : libellé exact
+ * (« Suggestions », « Sponsorisé »…), bouton « Suivre <nom> », ou description
+ * « Suggestion Reel de … ». Exclut « Suivi(e) », « Followers », « Following »…
+ */
+fun isSuggestedMarker(raw: CharSequence?): Boolean {
+    val t = raw?.toString()?.trim()?.lowercase() ?: return false
+    if (t in SUGGESTED_MARKERS) return true
+    return t.startsWith("suivre ") || t.startsWith("follow ") ||
+        t.startsWith("suggestion reel") || t.startsWith("suggestion de") ||
+        t.startsWith("sponsorisé") || t.startsWith("sponsored")
+}

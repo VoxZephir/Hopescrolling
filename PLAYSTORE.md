@@ -94,6 +94,10 @@ Play Console → Contenu de l'appli → Accessibilité (API AccessibilityService
   3. Ouvrir YouTube, toucher un Short : il se referme et la carte « Short refermé » apparaît.
   4. Ouvrir Instagram, aller sur Reels : retour automatique.
 
+## 5 bis. Accès aux données d'utilisation
+
+L'appli déclare `PACKAGE_USAGE_STATS` (accordé par l'utilisateur dans les réglages). Usage autorisé pour le bien-être numérique : mesurer le temps passé dans les applis surveillées et le temps récupéré. L'appli fonctionne sans, seul le temps récupéré n'est alors pas affiché.
+
 ## 6. Sécurité des données (Data safety)
 
 - L'appli collecte-t-elle ou partage-t-elle des données utilisateur ? **Non.**
