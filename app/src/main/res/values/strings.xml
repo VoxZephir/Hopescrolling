@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hopescrolling</string>
+    <string name="service_label">Hopescrolling – bloqueur de Shorts</string>
+    <string name="service_description">Détecte l\'écran YouTube Shorts / Instagram Reels / TikTok et appuie sur Retour à ta place. Ne lit que ces applis, rien n\'est envoyé nulle part.</string>
+    <string name="blocked_toast">%1$s bloqué 🛑</string>
+    <string name="tagline">Arrête de scroller. Le reste de tes applis marche normalement.</string>
+    <string name="status_on">✅ Blocage actif</string>
+    <string name="status_off">⚠️ Blocage inactif — active le service d\'accessibilité</string>
+    <string name="open_settings_off">Activer dans Accessibilité</string>
+    <string name="open_settings_on">Réglages d\'accessibilité</string>
+    <string name="what_to_block">Quoi bloquer</string>
+    <string name="stats">Bloqués aujourd\'hui : %1$d\nTotal : %2$d</string>
+    <string name="hint">Sideload sur Android 13+ : si l\'option est grisée, va dans Infos de l\'appli → ⋮ → « Autoriser les paramètres restreints », puis réessaie.</string>
+</resources>
