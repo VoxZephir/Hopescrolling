@@ -1,121 +1,81 @@
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package app.hopescrolling
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.os.CountDownTimer
-import android.view.Gravity
-import android.view.View
-import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.hopescrolling.ui.HopeTheme
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 
-/** Pause consciente : quelques respirations avant d'ouvrir Instagram / YouTube. */
-class PauseActivity : Activity() {
+/** Pause consciente : respirer, dire pourquoi on ouvre l'appli, puis choisir. */
+class PauseActivity : ComponentActivity() {
 
     private lateinit var pkg: String
     private var decided = false
-    private var timer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         pkg = intent.getStringExtra(EXTRA_PKG) ?: run { finish(); return }
         val name = PAUSE_APPS[pkg] ?: "cette appli"
-        val d = resources.displayMetrics.density
-        fun dp(v: Int) = (v * d).toInt()
-
         val today = LocalDate.now()
         val opens = Stats.count(this, today, Metric.PAUSE_CONTINUE) +
             Stats.count(this, today, Metric.PAUSE_QUIT) + 1
-
-        val circle = View(this).apply {
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#2E7D57"))
+        setContent {
+            HopeTheme {
+                BackHandler { quit() }
+                PauseScreen(name, opens, onQuit = ::quit, onContinue = ::proceed)
             }
         }
-        val breath = TextView(this).apply {
-            text = "Inspire…"
-            textSize = 22f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-        }
-        val circleBox = FrameLayout(this).apply {
-            addView(circle, FrameLayout.LayoutParams(dp(200), dp(200), Gravity.CENTER))
-            addView(breath, FrameLayout.LayoutParams(dp(200), dp(200), Gravity.CENTER))
-        }
-
-        val question = TextView(this).apply {
-            text = "Pourquoi tu ouvres $name ?"
-            textSize = 26f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(40), 0, dp(8))
-        }
-        val sub = TextView(this).apply {
-            text = "${opens}e ouverture aujourd'hui"
-            textSize = 15f
-            setTextColor(Color.parseColor("#B2DFC9"))
-            gravity = Gravity.CENTER
-        }
-        val quit = Button(this).apply {
-            text = "Non, je ferme"
-            setOnClickListener { quit() }
-        }
-        val go = Button(this).apply {
-            isEnabled = false
-            alpha = 0.6f
-            setOnClickListener { proceed() }
-        }
-
-        val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(32), dp(32), dp(32), dp(32))
-            setBackgroundColor(Color.parseColor("#0F2E21"))
-            addView(circleBox, LinearLayout.LayoutParams(-1, dp(240)))
-            addView(question)
-            addView(sub)
-            addView(quit, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(48) })
-            addView(go, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        }
-        setContentView(col)
-
-        // Respiration : 4 s on gonfle, 4 s on dégonfle.
-        circle.startAnimation(ScaleAnimation(
-            0.6f, 1f, 0.6f, 1f,
-            Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f,
-        ).apply {
-            duration = 4000
-            repeatMode = Animation.REVERSE
-            repeatCount = Animation.INFINITE
-            setAnimationListener(object : Animation.AnimationListener {
-                var inhale = true
-                override fun onAnimationStart(a: Animation) = Unit
-                override fun onAnimationEnd(a: Animation) = Unit
-                override fun onAnimationRepeat(a: Animation) {
-                    inhale = !inhale
-                    breath.text = if (inhale) "Inspire…" else "Expire…"
-                }
-            })
-        })
-
-        timer = object : CountDownTimer(WAIT_MS, 1000) {
-            override fun onTick(left: Long) {
-                go.text = "Continuer vers $name (${(left + 999) / 1000})"
-            }
-            override fun onFinish() {
-                go.text = "Continuer vers $name"
-                go.isEnabled = true
-                go.alpha = 1f
-            }
-        }.start()
     }
 
     private fun proceed() {
@@ -135,17 +95,121 @@ class PauseActivity : Activity() {
         finish()
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() = quit()
-
     override fun onDestroy() {
-        timer?.cancel()
         if (!decided && Passes.pausingPkg == pkg) Passes.pausingPkg = null
         super.onDestroy()
     }
 
     companion object {
         const val EXTRA_PKG = "pkg"
-        const val WAIT_MS = 8000L
+        const val WAIT_S = 8
+    }
+}
+
+private data class Reason(val emoji: String, val text: String, val impulsive: Boolean)
+
+private val REASONS = listOf(
+    Reason("💬", "Répondre à quelqu'un", false),
+    Reason("🔎", "Chercher un truc précis", false),
+    Reason("📣", "Publier quelque chose", false),
+    Reason("🫠", "Par réflexe", true),
+    Reason("🥱", "Je m'ennuie", true),
+)
+
+private val IDEAS = listOf(
+    "Boire un grand verre d'eau 💧",
+    "Marcher 5 minutes 🚶",
+    "Envoyer un message à quelqu'un que tu aimes 💌",
+    "Lire 3 pages d'un livre 📖",
+    "Ranger un truc qui traîne 🧺",
+    "Regarder par la fenêtre 1 minute 🌤️",
+)
+
+@Composable
+private fun PauseScreen(name: String, opens: Int, onQuit: () -> Unit, onContinue: () -> Unit) {
+    var left by remember { mutableIntStateOf(PauseActivity.WAIT_S) }
+    var inhale by remember { mutableStateOf(true) }
+    var reason by remember { mutableStateOf<Reason?>(null) }
+    val idea = remember { IDEAS.random() }
+    LaunchedEffect(Unit) { while (left > 0) { delay(1000); left-- } }
+    LaunchedEffect(Unit) { while (true) { delay(4000); inhale = !inhale } }
+
+    val t = rememberInfiniteTransition(label = "breath")
+    val scale by t.animateFloat(
+        0.65f, 1f,
+        infiniteRepeatable(tween(4000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "scale",
+    )
+
+    Column(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Color(0xFF0F2E21), Color(0xFF081A13))))
+            .safeDrawingPadding()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.weight(0.5f))
+        Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(220.dp).scale(scale).background(Color(0x332E7D57), CircleShape))
+            Box(Modifier.size(160.dp).scale(scale).background(Color(0xFF2E7D57), CircleShape))
+            Text(if (inhale) "Inspire…" else "Expire…", color = Color.White, fontSize = 22.sp)
+        }
+        Spacer(Modifier.height(32.dp))
+        Text("Pourquoi tu ouvres $name ?", color = Color.White, fontSize = 26.sp,
+            fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
+        Text("${opens}e ouverture aujourd'hui", color = Color(0xFFB2DFC9), fontSize = 15.sp)
+        Spacer(Modifier.height(24.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            REASONS.forEach { r ->
+                val selected = reason == r
+                Text(
+                    "${r.emoji}  ${r.text}",
+                    color = if (selected) Color(0xFF0F2E21) else Color.White,
+                    fontSize = 15.sp,
+                    modifier = Modifier
+                        .background(if (selected) Color(0xFFB2DFC9) else Color(0x1FFFFFFF), RoundedCornerShape(50))
+                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(50))
+                        .clickable { reason = r }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+            }
+        }
+
+        AnimatedVisibility(reason?.impulsive == true) {
+            Text(
+                "Et si tu faisais autre chose ?\n$idea",
+                color = Color(0xFFFFD54F), fontSize = 16.sp, textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 20.dp),
+            )
+        }
+
+        Spacer(Modifier.weight(1f))
+        Button(
+            onClick = onQuit,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB2DFC9), contentColor = Color(0xFF0F2E21)),
+        ) { Text("Non, je ferme", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
+        Spacer(Modifier.height(8.dp))
+        val canGo = left == 0 && reason != null
+        TextButton(
+            onClick = onContinue,
+            enabled = canGo,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+        ) {
+            Text(
+                when {
+                    left > 0 -> "Continuer vers $name dans ${left}s"
+                    reason == null -> "Choisis une raison pour continuer"
+                    else -> "Continuer vers $name"
+                },
+                color = if (canGo) Color.White else Color(0x80FFFFFF),
+            )
+        }
     }
 }

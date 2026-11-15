@@ -21,9 +21,9 @@ jobs:
         # Le numéro du run sert de versionCode : chaque build est plus récent que le précédent.
         env:
           VERSION_CODE: ${{ github.run_number }}
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk hopescrolling.apk
+        run: cp app/build/outputs/apk/release/app-release.apk hopescrolling.apk
       - uses: actions/upload-artifact@v4
         with:
           name: hopescrolling-apk
