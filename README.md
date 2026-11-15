@@ -24,6 +24,9 @@ Deux cas particuliers :
 - **Fil Instagram et Explorer** : 10 swipes sont autorisés, puis retour à l'écran d'accueil.
   Le compteur repart à zéro après 15 minutes sans scroller le fil. Ces valeurs se règlent
   dans `Targets.kt` (`FEED_SWIPE_BUDGET`, `FEED_RESET_MS`).
+- **Pubs et suggestions Instagram** : dans le fil Accueil, un post marqué « Sponsorisé »,
+  « Suggestions pour vous » ou avec un bouton « Suivre » est sauté : le service simule un
+  swipe pour le sortir de l'écran. La détection se fait sur ces textes (`SUGGESTED_MARKERS`).
 
 Tout se trouve dans `app/src/main/java/app/hopescrolling/` :
 - `Targets.kt` : les applis visées et les IDs de vue à détecter

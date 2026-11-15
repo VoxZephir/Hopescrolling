@@ -9,6 +9,8 @@ enum class Kind {
     BROWSER_URL,
     /** Fil Instagram : on laisse quelques swipes, puis écran d'accueil. */
     FEED_LIMIT,
+    /** Fil Instagram : saute les pubs et les posts de comptes non suivis. */
+    SKIP_POSTS,
 }
 
 /**
@@ -54,6 +56,13 @@ enum class Target(
         // Onglets de la barre du bas où le scroll est limité.
         viewIds = listOf("feed_tab", "search_tab"),
     ),
+    INSTAGRAM_SUGGESTED(
+        label = "Sauter pubs et suggestions dans le fil Instagram",
+        toast = "",
+        kind = Kind.SKIP_POSTS,
+        packages = listOf(INSTAGRAM),
+        viewIds = listOf("feed_tab"),
+    ),
     TIKTOK(
         label = "TikTok (appli entière)",
         toast = "TikTok bloqué 🛑",
@@ -93,4 +102,15 @@ val BLOCKED_URLS: List<Regex> = listOf(
     Regex("""youtube\.com/shorts""", RegexOption.IGNORE_CASE),
     Regex("""instagram\.com/reels?(/|$)""", RegexOption.IGNORE_CASE),
     Regex("""tiktok\.com""", RegexOption.IGNORE_CASE),
+)
+
+/**
+ * Textes (exacts, sans tenir compte de la casse) qui signalent un post d'un compte
+ * que tu ne suis pas : pub, suggestion, ou bouton "Suivre" dans l'en-tête du post.
+ */
+val SUGGESTED_MARKERS: Set<String> = setOf(
+    "sponsorisé", "sponsorisée", "sponsored", "publicité",
+    "suggestions pour vous", "suggéré pour vous", "suggested for you",
+    "publications suggérées", "suggested posts",
+    "suivre", "follow",
 )

@@ -30,6 +30,9 @@ object Prefs {
 
     fun totalCount(c: Context) = sp(c).getInt("total", 0)
 
+    fun recordSkip(c: Context) = sp(c).edit().putInt("skipped", sp(c).getInt("skipped", 0) + 1).apply()
+    fun skippedCount(c: Context) = sp(c).getInt("skipped", 0)
+
     // --- Mode diagnostic ---
     fun diagnostic(c: Context) = sp(c).getBoolean("diag", false)
     fun setDiagnostic(c: Context, v: Boolean) = sp(c).edit().putBoolean("diag", v).apply()

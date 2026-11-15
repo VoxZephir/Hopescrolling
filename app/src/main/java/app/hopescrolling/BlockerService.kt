@@ -1,6 +1,9 @@
 package app.hopescrolling
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityService.GestureResultCallback
+import android.accessibilityservice.GestureDescription
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
@@ -27,6 +30,10 @@ class BlockerService : AccessibilityService() {
 
     private var lastDumpAt = 0L
 
+    // Saut des posts suggérés
+    private var skipping = false
+    private var lastSkipAt = 0L
+
     private val deferredCheck = Runnable {
         pendingPkg?.let { check(it) }
         pendingPkg = null
@@ -39,7 +46,7 @@ class BlockerService : AccessibilityService() {
 
         if (Prefs.diagnostic(this)) maybeDump(pkg)
 
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && pkg == INSTAGRAM) {
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && pkg == INSTAGRAM && !skipping) {
             onInstagramScroll(event)
         }
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
@@ -78,6 +85,102 @@ class BlockerService : AccessibilityService() {
                 block(t, GLOBAL_ACTION_BACK); return
             }
         }
+
+        if (Target.INSTAGRAM_SUGGESTED in targets) skipSuggested(root)
+    }
+
+    /**
+     * Si un post d'un compte non suivi est visible dans le fil Accueil, on fait
+     * défiler le fil (geste de swipe simulé) pour l'amener hors de l'écran.
+     */
+    private fun skipSuggested(root: AccessibilityNodeInfo) {
+        val now = SystemClock.uptimeMillis()
+        if (skipping || now - lastSkipAt < SKIP_COOLDOWN_MS) return
+        val onHome = Target.INSTAGRAM_SUGGESTED.viewIds.any { id ->
+            root.visible("$INSTAGRAM:id/$id").any { it.isSelected }
+        }
+        if (!onHome) return
+
+        val screenH = resources.displayMetrics.heightPixels
+        val marker = SUGGESTED_MARKERS.asSequence()
+            .flatMap { root.findAccessibilityNodeInfosByText(it).asSequence() }
+            .filter { it.isVisibleToUser }
+            .filter { n ->
+                val txt = (n.text ?: n.contentDescription)?.toString()?.trim()?.lowercase()
+                txt in SUGGESTED_MARKERS
+            }
+            .mapNotNull { n -> feedListOf(n, screenH)?.let { n to it } }
+            .minByOrNull { (n, _) -> Rect().also { r -> n.getBoundsInScreen(r) }.top }
+            ?: return
+
+        val (node, list) = marker
+        val m = Rect().also { node.getBoundsInScreen(it) }
+        val l = Rect().also { list.getBoundsInScreen(it) }
+        val d = resources.displayMetrics.density
+        // Taille estimée d'un post à partir de son en-tête : média carré
+        // (largeur de l'écran) + boutons, likes et légende.
+        val distance = (m.top - l.top) + l.width() + (POST_EXTRA_DP * d).toInt()
+        lastSkipAt = now
+        skipping = true
+        Prefs.recordSkip(this)
+        swipeUp(l, distance)
+    }
+
+    /** Remonte vers le parent jusqu'à la grande liste qui défile (le fil). */
+    private fun feedListOf(n: AccessibilityNodeInfo, screenH: Int): AccessibilityNodeInfo? {
+        var cur: AccessibilityNodeInfo? = n.parent
+        var depth = 0
+        while (cur != null && depth < 25) {
+            if (cur.isScrollable) {
+                val r = Rect().also { cur!!.getBoundsInScreen(it) }
+                if (r.height() > screenH / 2) return cur
+            }
+            cur = cur.parent
+            depth++
+        }
+        return null
+    }
+
+    /**
+     * Swipe vers le haut de [distance] px dans [list], en plusieurs gestes si besoin.
+     * Le doigt s'immobilise à la fin pour éviter que le fil continue sur sa lancée.
+     */
+    private fun swipeUp(list: Rect, distance: Int) {
+        val margin = list.height() / 10
+        val maxStep = list.height() - 2 * margin
+        val step = minOf(distance, maxStep)
+        if (step < 20) { finishSkip(); return }
+        val x = list.exactCenterX()
+        val startY = (list.bottom - margin).toFloat()
+        val endY = startY - step
+
+        val move = Path().apply { moveTo(x, startY); lineTo(x, endY) }
+        val hold = Path().apply { moveTo(x, endY); lineTo(x, endY + 1f) }
+        val stroke = GestureDescription.StrokeDescription(move, 0, 450, true)
+        val still = stroke.continueStroke(hold, 0, 200, false)
+        val first = GestureDescription.Builder().addStroke(stroke).build()
+        val second = GestureDescription.Builder().addStroke(still).build()
+
+        val done = object : GestureResultCallback() {
+            override fun onCompleted(g: GestureDescription) {
+                dispatchGesture(second, object : GestureResultCallback() {
+                    override fun onCompleted(g: GestureDescription) {
+                        if (distance - step > 20) swipeUp(list, distance - step) else finishSkip()
+                    }
+                    override fun onCancelled(g: GestureDescription) = finishSkip()
+                }, null)
+            }
+            override fun onCancelled(g: GestureDescription) = finishSkip()
+        }
+        if (!dispatchGesture(first, done, null)) finishSkip()
+    }
+
+    private fun finishSkip() {
+        handler.postDelayed({
+            skipping = false
+            lastSkipAt = SystemClock.uptimeMillis()
+            rootInActiveWindow?.packageName?.toString()?.let { check(it) }
+        }, 300)
     }
 
     /** URL affichée dans la barre d'adresse (ignorée pendant que tu tapes dedans). */
@@ -152,5 +255,7 @@ class BlockerService : AccessibilityService() {
         const val CHECK_INTERVAL_MS = 200L
         const val COOLDOWN_MS = 700L
         const val SWIPE_GAP_MS = 350L
+        const val SKIP_COOLDOWN_MS = 600L
+        const val POST_EXTRA_DP = 170
     }
 }

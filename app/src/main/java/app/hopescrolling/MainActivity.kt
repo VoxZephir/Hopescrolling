@@ -68,7 +68,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.open_settings).setText(
             if (on) R.string.open_settings_on else R.string.open_settings_off
         )
-        stats.text = getString(R.string.stats, Prefs.todayCount(this), Prefs.totalCount(this))
+        stats.text = getString(R.string.stats, Prefs.todayCount(this), Prefs.totalCount(this), Prefs.skippedCount(this))
     }
 
     private fun isServiceEnabled(): Boolean {
