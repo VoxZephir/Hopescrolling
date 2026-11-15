@@ -60,5 +60,6 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-core")
+    // Icônes Material : R8 ne garde que celles utilisées.
+    implementation("androidx.compose.material:material-icons-extended")
 }

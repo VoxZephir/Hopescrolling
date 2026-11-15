@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -51,7 +54,8 @@ object Lock {
         val ok = left == 0 && typed.trim().equals(PHRASE, ignoreCase = true)
         AlertDialog(
             onDismissRequest = { pending = null },
-            title = { Text("🔒 Verrou") },
+            icon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+            title = { Text("Verrou") },
             text = {
                 Column {
                     Text("Pour ${req.what}, attends $WAIT_S secondes et recopie :")

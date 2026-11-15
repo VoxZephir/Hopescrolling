@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,13 +55,13 @@ fun AddAppDialog(onClose: () -> Unit) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.safeDrawingPadding()) {
                 Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "Fermer") }
+                    IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, contentDescription = "Fermer") }
                     Text("Ajouter une appli", style = MaterialTheme.typography.titleLarge)
                 }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                     placeholder = { Text("Rechercher") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -94,6 +94,6 @@ private fun PickRow(pkg: String, label: String, onAdd: () -> Unit) {
         AppIcon(pkg, 40)
         Spacer(Modifier.width(16.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Icon(Icons.Filled.Add, contentDescription = "Ajouter", tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Rounded.Add, contentDescription = "Ajouter", tint = MaterialTheme.colorScheme.primary)
     }
 }

@@ -58,6 +58,47 @@ object Stats {
         return n
     }
 
+    // --- Temps d'écran mesuré sur les applis surveillées ---
+    private fun screenKey(day: LocalDate, pkg: String) = "st_${day}_$pkg"
+
+    fun addScreenMs(c: Context, pkg: String, ms: Long) {
+        if (ms <= 0) return
+        val p = Prefs.sp(c)
+        val k = screenKey(LocalDate.now(), pkg)
+        p.edit().putLong(k, p.getLong(k, 0L) + ms).apply()
+    }
+
+    /** Minutes passées par appli un jour donné, de la plus utilisée à la moins utilisée. */
+    fun screenByApp(c: Context, day: LocalDate): List<Pair<String, Int>> {
+        val prefix = "st_${day}_"
+        return Prefs.sp(c).all.entries
+            .filter { it.key.startsWith(prefix) }
+            .map { it.key.removePrefix(prefix) to (((it.value as? Long) ?: 0L) / 60_000L).toInt() }
+            .filter { it.second > 0 }
+            .sortedByDescending { it.second }
+    }
+
+    fun screenMinutes(c: Context, day: LocalDate): Int {
+        val prefix = "st_${day}_"
+        val ms = Prefs.sp(c).all.entries.filter { it.key.startsWith(prefix) }
+            .sumOf { (it.value as? Long) ?: 0L }
+        return (ms / 60_000L).toInt()
+    }
+
+    /** Moyenne quotidienne sur les 7 jours avant aujourd'hui (jours sans mesure exclus). */
+    fun screenAverage(c: Context): Int? {
+        val days = (1..7).map { LocalDate.now().minusDays(it.toLong()) }
+            .map { screenMinutes(c, it) }.filter { it > 0 }
+        return if (days.isEmpty()) null else days.sum() / days.size
+    }
+
+    fun bestStreak(c: Context): Int {
+        val p = Prefs.sp(c)
+        val best = maxOf(p.getInt("best_streak", 0), streak(c))
+        if (best > p.getInt("best_streak", 0)) p.edit().putInt("best_streak", best).apply()
+        return best
+    }
+
     // --- Temps passé sur les Shorts (pour le budget quotidien) ---
     private fun shortsKey() = "shorts_ms_${LocalDate.now()}"
     fun shortsMsToday(c: Context) = Prefs.sp(c).getLong(shortsKey(), 0L)

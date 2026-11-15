@@ -25,6 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccessibilityNew
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,10 +84,10 @@ fun Onboarding(serviceOn: Boolean, onDone: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 when (s) {
-                    0 -> Page("🌅", "Reprends ton temps",
+                    0 -> Page(Icons.Rounded.WbTwilight, "Reprends ton temps",
                         "Hopescrolling referme les Shorts, les Reels et TikTok à ta place, sans bloquer le reste de tes applis.\n\nTu gardes YouTube pour les vidéos que tu cherches, et Instagram pour tes potes et tes messages.")
                     1 -> {
-                        Page("🛠️", "Active le service",
+                        Page(Icons.Rounded.AccessibilityNew, "Active le service",
                             "Hopescrolling utilise un service d'accessibilité pour voir quel écran est affiché et appuyer sur Retour à ta place.\n\nIl voit les changements d'écran mais n'agit que sur les applis que tu choisis. Il n'a pas accès à Internet : rien ne quitte ton téléphone.")
                         Spacer(Modifier.height(24.dp))
                         Tip("1", "Appuie sur « Ouvrir l'accessibilité », choisis Hopescrolling et active-le.")
@@ -93,8 +98,8 @@ fun Onboarding(serviceOn: Boolean, onDone: () -> Unit) {
                                 Uri.parse("package:${c.packageName}")))
                         }) { Text("Infos de l'appli") }
                     }
-                    else -> Page("🎉", "C'est prêt",
-                        "Les Shorts, les Reels et TikTok sont bloqués.\n\nDans les onglets, tu peux régler la pause avant Instagram, le couvre-feu et le verrou anti-triche.")
+                    else -> Page(Icons.Rounded.CheckCircle, "C'est prêt",
+                        "Les Shorts, les Reels et TikTok sont bloqués. LinkedIn, Instagram et YouTube ont une pause à l'ouverture et une limite de scroll.\n\nTout se règle dans les onglets Blocages et Règles.")
                 }
             }
         }
@@ -124,8 +129,10 @@ fun Onboarding(serviceOn: Boolean, onDone: () -> Unit) {
 }
 
 @Composable
-private fun Page(emoji: String, title: String, body: String) {
-    Text(emoji, fontSize = 72.sp)
+private fun Page(icon: ImageVector, title: String, body: String) {
+    IconBadge(icon, size = 96,
+        container = MaterialTheme.colorScheme.primaryContainer,
+        tint = MaterialTheme.colorScheme.onPrimaryContainer)
     Spacer(Modifier.height(24.dp))
     Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
     Spacer(Modifier.height(16.dp))

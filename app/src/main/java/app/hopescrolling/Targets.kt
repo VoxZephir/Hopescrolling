@@ -20,7 +20,6 @@ enum class Kind {
  */
 enum class Target(
     val label: String,
-    val emoji: String,
     val description: String,
     val toast: String,
     val kind: Kind,
@@ -29,9 +28,8 @@ enum class Target(
 ) {
     YOUTUBE_SHORTS(
         label = "YouTube Shorts",
-        emoji = "▶️",
         description = "Retour automatique dès qu'un Short s'ouvre. Le reste de YouTube marche normalement.",
-        toast = "YouTube Shorts bloqué 🛑",
+        toast = "Short refermé",
         kind = Kind.VIEW_IDS,
         packages = listOf(YOUTUBE),
         viewIds = listOf(
@@ -43,9 +41,8 @@ enum class Target(
     ),
     INSTAGRAM_REELS(
         label = "Instagram Reels",
-        emoji = "📸",
         description = "L'onglet Reels et les Reels ouverts depuis le fil sont refermés.",
-        toast = "Reels bloqués 🛑",
+        toast = "Reel refermé",
         kind = Kind.VIEW_IDS,
         packages = listOf(INSTAGRAM),
         viewIds = listOf(
@@ -56,9 +53,8 @@ enum class Target(
     ),
     INSTAGRAM_FEED(
         label = "Limite du fil Instagram",
-        emoji = "🧱",
         description = "Quelques swipes dans Accueil et Explorer (réglable dans Règles), puis retour à l'écran d'accueil.",
-        toast = "Fil Instagram terminé pour l'instant 🌅",
+        toast = "Fil Instagram terminé pour l'instant",
         kind = Kind.FEED_LIMIT,
         packages = listOf(INSTAGRAM),
         // Onglets de la barre du bas où le scroll est limité.
@@ -66,7 +62,6 @@ enum class Target(
     ),
     INSTAGRAM_SUGGESTED(
         label = "Pubs et suggestions Instagram",
-        emoji = "⏭️",
         description = "Les posts sponsorisés et ceux des comptes que tu ne suis pas sont sautés automatiquement.",
         toast = "",
         kind = Kind.SKIP_POSTS,
@@ -75,17 +70,15 @@ enum class Target(
     ),
     TIKTOK(
         label = "TikTok",
-        emoji = "🎵",
         description = "L'appli entière : elle se referme dès qu'elle s'ouvre.",
-        toast = "TikTok bloqué 🛑",
+        toast = "TikTok refermé",
         kind = Kind.WHOLE_APP,
         packages = TIKTOK_PKGS.toList(),
     ),
     BROWSER(
         label = "Dans le navigateur",
-        emoji = "🌐",
         description = "youtube.com/shorts, instagram.com/reels et tiktok.com dans Brave, Chrome, Firefox et DuckDuckGo.",
-        toast = "Bloqué dans le navigateur 🛑",
+        toast = "Vidéo courte refermée",
         kind = Kind.BROWSER_URL,
         packages = BROWSER_URL_BARS.keys.toList(),
     );

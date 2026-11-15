@@ -19,8 +19,9 @@ class HopeWidget : AppWidgetProvider() {
             val cn = ComponentName(c, HopeWidget::class.java)
             if (m.getAppWidgetIds(cn).isEmpty()) return
             val v = RemoteViews(c.packageName, R.layout.widget)
-            v.setTextViewText(R.id.w_saved, "🌅 ${Stats.minutesSaved(c, LocalDate.now())} min récupérées")
-            v.setTextViewText(R.id.w_streak, "🔥 Série : ${Stats.streak(c)} j")
+            val saved = Stats.minutesSaved(c, LocalDate.now())
+            v.setTextViewText(R.id.w_saved, formatDuration(saved))
+            v.setTextViewText(R.id.w_streak, "Série de ${Stats.streak(c)} j · ${Equivalence.short(saved)}")
             val open = PendingIntent.getActivity(
                 c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
             )

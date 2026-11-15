@@ -32,7 +32,16 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.HourglassEmpty
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -106,23 +116,23 @@ class PauseActivity : ComponentActivity() {
     }
 }
 
-private data class Reason(val emoji: String, val text: String, val impulsive: Boolean)
+private data class Reason(val icon: ImageVector, val text: String, val impulsive: Boolean)
 
 private val REASONS = listOf(
-    Reason("💬", "Répondre à quelqu'un", false),
-    Reason("🔎", "Chercher un truc précis", false),
-    Reason("📣", "Publier quelque chose", false),
-    Reason("🫠", "Par réflexe", true),
-    Reason("🥱", "Je m'ennuie", true),
+    Reason(Icons.Rounded.Forum, "Répondre à quelqu'un", false),
+    Reason(Icons.Rounded.Search, "Chercher un truc précis", false),
+    Reason(Icons.Rounded.Edit, "Publier quelque chose", false),
+    Reason(Icons.Rounded.Repeat, "Par réflexe", true),
+    Reason(Icons.Rounded.HourglassEmpty, "Je m'ennuie", true),
 )
 
 private val IDEAS = listOf(
-    "Boire un grand verre d'eau 💧",
-    "Marcher 5 minutes 🚶",
-    "Envoyer un message à quelqu'un que tu aimes 💌",
-    "Lire 3 pages d'un livre 📖",
-    "Ranger un truc qui traîne 🧺",
-    "Regarder par la fenêtre 1 minute 🌤️",
+    "Boire un grand verre d'eau.",
+    "Marcher cinq minutes.",
+    "Envoyer un message à quelqu'un que tu aimes.",
+    "Lire trois pages d'un livre.",
+    "Ranger un truc qui traîne.",
+    "Regarder par la fenêtre une minute.",
 )
 
 @Composable
@@ -168,25 +178,33 @@ private fun PauseScreen(name: String, opens: Int, onQuit: () -> Unit, onContinue
         ) {
             REASONS.forEach { r ->
                 val selected = reason == r
-                Text(
-                    "${r.emoji}  ${r.text}",
-                    color = if (selected) Color(0xFF0F2E21) else Color.White,
-                    fontSize = 15.sp,
-                    modifier = Modifier
-                        .background(if (selected) Color(0xFFB2DFC9) else Color(0x1FFFFFFF), RoundedCornerShape(50))
-                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(50))
+                val fg = if (selected) Color(0xFF0F2E21) else Color.White
+                Row(
+                    Modifier
+                        .background(if (selected) Color(0xFFB2DFC9) else Color(0x14FFFFFF), RoundedCornerShape(50))
+                        .border(1.dp, if (selected) Color.Transparent else Color(0x29FFFFFF), RoundedCornerShape(50))
                         .clickable { reason = r }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(r.icon, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(r.text, color = fg, fontSize = 15.sp)
+                }
             }
         }
 
         AnimatedVisibility(reason?.impulsive == true) {
-            Text(
-                "Et si tu faisais autre chose ?\n$idea",
-                color = Color(0xFFFFD54F), fontSize = 16.sp, textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 20.dp),
-            )
+            Column(
+                Modifier.padding(top = 20.dp).fillMaxWidth()
+                    .background(Color(0x14FFD54F), RoundedCornerShape(20.dp)).padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("Et si tu faisais autre chose ?", color = Color(0xFFFFD54F),
+                    fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                Text(idea, color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center)
+            }
         }
 
         Spacer(Modifier.weight(1f))

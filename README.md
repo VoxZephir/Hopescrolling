@@ -57,8 +57,12 @@ LinkedIn, Instagram et YouTube sont surveillées par défaut.
   « Je choisis de perdre mon temps ».
 - **Protection des réglages** : empêche d'ouvrir la page d'accessibilité de Hopescrolling,
   ses infos d'appli (forcer l'arrêt) et sa désinstallation.
-- **Stats** : minutes récupérées (estimation), graphique sur 7 jours, série de jours sans
-  atteindre une limite, et un widget pour l'écran d'accueil.
+- **Stats** : temps récupéré (estimation) et ses équivalences (livres lus, km de marche,
+  films, séances de sport), **temps d'écran mesuré** par appli surveillée comparé à ta
+  moyenne, graphique sur 7 jours, série de jours sans atteindre une limite, et un widget
+  pour l'écran d'accueil.
+- **Message de blocage** : une carte discrète en haut de l'écran rappelle le temps récupéré
+  du jour.
 
 ## Installer sur un Pixel
 

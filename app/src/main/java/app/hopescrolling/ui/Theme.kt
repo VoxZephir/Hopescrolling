@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 val Sunrise = Color(0xFFFFB74D)
 val Danger = Color(0xFFE5484D)
@@ -36,11 +37,14 @@ private val DarkFallback = darkColorScheme(
 
 private val HopeTypography = Typography().let { t ->
     t.copy(
-        displaySmall = t.displaySmall.copy(fontWeight = FontWeight.Bold),
+        displayMedium = t.displayMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-1).sp),
+        displaySmall = t.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+        headlineLarge = t.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
         headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.Bold),
         headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
         titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold),
         titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        labelMedium = t.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp),
     )
 }
 

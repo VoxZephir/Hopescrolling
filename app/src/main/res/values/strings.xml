@@ -10,11 +10,5 @@
     <string name="diag_copied">Diagnostic copié dans le presse-papiers</string>
     <string name="diag_empty">Rien d\'enregistré pour l\'instant : active le mode puis ouvre l\'appli à analyser.</string>
     <string name="tagline">Arrête de scroller. Le reste de tes applis marche normalement.</string>
-    <string name="status_on">✅ Blocage actif</string>
-    <string name="status_off">⚠️ Blocage inactif — active le service d\'accessibilité</string>
-    <string name="open_settings_off">Activer dans Accessibilité</string>
-    <string name="open_settings_on">Réglages d\'accessibilité</string>
-    <string name="what_to_block">Quoi bloquer</string>
-    <string name="stats">Bloqués aujourd\'hui : %1$d\nTotal : %2$d\nPubs et suggestions sautées : %3$d</string>
     <string name="hint">Sideload sur Android 13+ : si l\'option est grisée, va dans Infos de l\'appli → ⋮ → « Autoriser les paramètres restreints », puis réessaie.</string>
 </resources>

@@ -17,10 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -70,10 +70,10 @@ class MainActivity : ComponentActivity() {
     private fun Main(serviceOn: Boolean) {
         var tab by rememberSaveable { mutableIntStateOf(0) }
         val tabs = listOf(
-            Triple("Accueil", Icons.Filled.Home, 0),
-            Triple("Blocages", Icons.Filled.Lock, 1),
-            Triple("Règles", Icons.Filled.DateRange, 2),
-            Triple("Réglages", Icons.Filled.Settings, 3),
+            Triple("Accueil", Icons.Rounded.Home, 0),
+            Triple("Blocages", Icons.Rounded.Shield, 1),
+            Triple("Règles", Icons.Rounded.Tune, 2),
+            Triple("Réglages", Icons.Rounded.Settings, 3),
         )
         Scaffold(
             bottomBar = {

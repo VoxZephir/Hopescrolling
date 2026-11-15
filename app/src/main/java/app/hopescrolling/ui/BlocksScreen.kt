@@ -11,8 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SmartDisplay
+import androidx.compose.material.icons.rounded.Swipe
+import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import app.hopescrolling.Apps
 import app.hopescrolling.Prefs
@@ -49,15 +59,15 @@ fun BlocksScreen() {
                 val apps = Apps.managed(c).filter { Apps.isInstalled(c, it) }
                     .sortedBy { Apps.label(c, it).lowercase() }
                 apps.forEachIndexed { i, pkg ->
-                    if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                    if (i > 0) RowDivider()
                     AppRow(pkg) { openApp = pkg }
                 }
-                if (apps.isNotEmpty()) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                if (apps.isNotEmpty()) RowDivider()
                 Row(
                     Modifier.fillMaxWidth().clickable { adding = true }.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    IconBadge(Icons.Rounded.Add, container = MaterialTheme.colorScheme.primaryContainer, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(Modifier.width(16.dp))
                     Text("Ajouter une appli", style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary)
@@ -70,8 +80,8 @@ fun BlocksScreen() {
         HopeCard {
             Column {
                 Target.entries.forEachIndexed { i, t ->
-                    if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                    ToggleRow(t.emoji, t.label, t.description, Prefs.isEnabled(c, t)) { on ->
+                    if (i > 0) RowDivider()
+                    ToggleRow(iconFor(t), t.label, t.description, Prefs.isEnabled(c, t)) { on ->
                         if (on) { Prefs.setEnabled(c, t, true); UiState.bump() }
                         else Lock.guard(c, "désactiver « ${t.label} »") { Prefs.setEnabled(c, t, false) }
                     }
@@ -107,7 +117,7 @@ private fun AppRow(pkg: String, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null,
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -125,14 +135,14 @@ private fun AppSheet(pkg: String, onClose: () -> Unit) {
                 Spacer(Modifier.width(16.dp))
                 Text(name, style = MaterialTheme.typography.headlineSmall)
             }
-            ToggleRow("🧘", "Pause avant d'ouvrir",
+            ToggleRow(Icons.Rounded.SelfImprovement, "Pause avant d'ouvrir",
                 "8 secondes de respiration et une question avant d'entrer.",
                 Apps.pause(c, pkg)) { on ->
                 if (on) { Apps.setPause(c, pkg, true); UiState.bump() }
                 else Lock.guard(c, "désactiver la pause avant $name") { Apps.setPause(c, pkg, false) }
             }
             if (Apps.hasGenericScroll(pkg)) {
-                ToggleRow("🧱", "Limite de scroll",
+                ToggleRow(Icons.Rounded.Swipe, "Limite de scroll",
                     "${Prefs.scrollBudget(c)} swipes dans un fil, puis retour à l'écran d'accueil. Le compteur repart à zéro après 15 min.",
                     Apps.scroll(c, pkg)) { on ->
                     if (on) { Apps.setScroll(c, pkg, true); UiState.bump() }
@@ -141,7 +151,7 @@ private fun AppSheet(pkg: String, onClose: () -> Unit) {
             } else {
                 Hint("La limite de scroll d'Instagram se règle dans « Vidéos courtes » : elle ne compte que les onglets Accueil et Explorer.")
             }
-            ToggleRow("🌙", "Couvre-feu et concentration",
+            ToggleRow(Icons.Rounded.Bedtime, "Couvre-feu et concentration",
                 "Fermée pendant le couvre-feu et le mode concentration.",
                 Apps.lockdown(c, pkg)) { on ->
                 if (on) { Apps.setLockdown(c, pkg, true); UiState.bump() }
@@ -157,11 +167,11 @@ private fun AppSheet(pkg: String, onClose: () -> Unit) {
     }
 }
 
-@Composable
-fun ScreenHeader(title: String, subtitle: String) {
-    Column(Modifier.padding(start = 8.dp, top = 8.dp, bottom = 4.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
-        Text(subtitle, style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+private fun iconFor(t: Target): ImageVector = when (t) {
+    Target.YOUTUBE_SHORTS -> Icons.Rounded.SmartDisplay
+    Target.INSTAGRAM_REELS -> Icons.Rounded.Movie
+    Target.INSTAGRAM_FEED -> Icons.Rounded.ViewAgenda
+    Target.INSTAGRAM_SUGGESTED -> Icons.Rounded.SkipNext
+    Target.TIKTOK -> Icons.Rounded.MusicNote
+    Target.BROWSER -> Icons.Rounded.Language
 }

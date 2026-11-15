@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -34,5 +35,5 @@ fun AppIcon(pkg: String, size: Int = 44) {
     val c = LocalContext.current
     val img = remember(pkg) { loadIcon(c, pkg) }
     if (img != null) Image(img, contentDescription = null, modifier = Modifier.size(size.dp))
-    else EmojiBadge("📱", size)
+    else IconBadge(androidx.compose.material.icons.Icons.Rounded.Apps, size)
 }

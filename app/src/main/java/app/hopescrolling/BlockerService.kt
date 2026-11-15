@@ -3,7 +3,12 @@ package app.hopescrolling
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.GestureResultCallback
 import android.accessibilityservice.GestureDescription
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.view.inputmethod.InputMethodManager
+import java.time.LocalDate
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Handler
@@ -11,7 +16,6 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
 
 /**
  * Principe :
@@ -44,6 +48,7 @@ class BlockerService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val pkg = event.packageName?.toString() ?: return
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) foreground(pkg)
         if (pkg in SETTINGS_PKGS) { protectSettings(pkg); return }
         if (gate(pkg)) return
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
@@ -250,7 +255,7 @@ class BlockerService : AccessibilityService() {
             lastActionAt = now
             performGlobalAction(GLOBAL_ACTION_HOME)
             Stats.record(this, Metric.FEED_LIMIT)
-            toast("${Apps.label(this, pkg)} : fil terminé pour l'instant 🌅")
+            toast("${Apps.label(this, pkg)} : fil terminé pour l'instant")
         }
     }
 
@@ -266,7 +271,7 @@ class BlockerService : AccessibilityService() {
         lastActionAt = SystemClock.uptimeMillis()
         performGlobalAction(action)
         Stats.record(this, metric)
-        toast(if (metric == Metric.BUDGET_LIMIT) "Budget Shorts du jour épuisé 🛑" else target.toast)
+        toast(if (metric == Metric.BUDGET_LIMIT) "Budget Shorts du jour épuisé" else target.toast)
         if (!recheck) return
         // Encore sur l'écran bloqué après un Retour (onglet Shorts au démarrage,
         // historique du navigateur rempli de Shorts…) : on recommence.
@@ -285,7 +290,73 @@ class BlockerService : AccessibilityService() {
         Prefs.saveDump(this, pkg, Diagnostic.dump(root, pkg in BROWSER_URL_BARS))
     }
 
-    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    private lateinit var notice: Notice
+
+    /** Message discret en haut de l'écran, avec le temps récupéré du jour. */
+    private fun toast(title: String, subtitle: String? = null) {
+        val saved = Stats.minutesSaved(this, LocalDate.now())
+        notice.show(
+            title,
+            subtitle ?: if (saved > 0) "${formatDuration(saved)} récupérées aujourd'hui · ${Equivalence.short(saved)}"
+            else "Le reste de tes applis reste disponible",
+        )
+    }
+
+    // ---------- Temps d'écran ----------
+
+    private var fgPkg: String? = null
+    private var fgSince = 0L
+    private var keyboards = emptySet<String>()
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, i: Intent) {
+            when (i.action) {
+                Intent.ACTION_SCREEN_OFF -> { flushScreenTime(); fgPkg = null }
+                Intent.ACTION_USER_PRESENT -> foreground(rootInActiveWindow?.packageName?.toString())
+            }
+        }
+    }
+
+    private val periodicFlush = object : Runnable {
+        override fun run() {
+            if (fgPkg != null) { flushScreenTime(); fgSince = SystemClock.uptimeMillis() }
+            handler.postDelayed(this, 60_000)
+        }
+    }
+
+    /** Appelé quand une autre appli passe au premier plan. */
+    private fun foreground(pkg: String?) {
+        if (pkg == null || pkg == fgPkg || pkg in IGNORED_FOREGROUND || pkg in keyboards) return
+        flushScreenTime()
+        fgPkg = pkg
+        fgSince = SystemClock.uptimeMillis()
+    }
+
+    private fun flushScreenTime() {
+        val pkg = fgPkg ?: return
+        val now = SystemClock.uptimeMillis()
+        if (pkg in Apps.config(this).managed || pkg in TIKTOK_PKGS) {
+            Stats.addScreenMs(this, pkg, now - fgSince)
+        }
+        fgSince = now
+    }
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        notice = Notice(this)
+        keyboards = getSystemService(InputMethodManager::class.java)
+            .enabledInputMethodList.map { it.packageName }.toSet()
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(screenReceiver, filter)
+        }
+        handler.postDelayed(periodicFlush, 60_000)
+    }
 
     /**
      * Couvre-feu, mode concentration et pause consciente.
@@ -301,7 +372,7 @@ class BlockerService : AccessibilityService() {
                     lastActionAt = now
                     performGlobalAction(GLOBAL_ACTION_HOME)
                     Stats.record(this, Metric.CURFEW)
-                    toast("$reason 🌙")
+                    toast(reason)
                 }
                 return true
             }
@@ -349,13 +420,16 @@ class BlockerService : AccessibilityService() {
         if (danger) {
             lastProtectAt = now
             performGlobalAction(GLOBAL_ACTION_BACK)
-            toast("Protégé 🔒 Désactive la protection dans Hopescrolling d'abord")
+            toast("Protégé par Hopescrolling", "Désactive d'abord la protection dans l'appli")
         }
     }
 
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
+        flushScreenTime()
+        runCatching { unregisterReceiver(screenReceiver) }
+        if (::notice.isInitialized) notice.hide()
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -372,5 +446,7 @@ class BlockerService : AccessibilityService() {
         val USE_PREFIXES = listOf("Utiliser ", "Use ")
         val APP_INFO_TEXTS = listOf("Forcer l'arrêt", "Force stop", "Désinstaller", "Uninstall")
         val UNINSTALL_TEXTS = listOf("désinstaller", "uninstall")
+        /** Ne changent pas l'appli "au premier plan" (volet des notifications, nous-mêmes…). */
+        val IGNORED_FOREGROUND = setOf("com.android.systemui", "app.hopescrolling")
     }
 }

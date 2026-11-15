@@ -9,7 +9,15 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,21 +31,21 @@ const val REPO_URL = "https://github.com/VoxZephir/Hopescrolling"
 fun SettingsScreen(serviceOn: Boolean) {
     val c = LocalContext.current
     UiState.version
-    val divider = @Composable { HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant) }
+    val divider = @Composable { RowDivider() }
     Column {
         ScreenHeader("Réglages", "Anti-triche, mises à jour et diagnostic.")
 
         SectionTitle("Anti-triche")
         HopeCard {
             Column {
-                ToggleRow("🔒", "Verrou",
+                ToggleRow(Icons.Rounded.Lock, "Verrou",
                     "Pour assouplir une règle : attendre 30 s et recopier « ${Lock.PHRASE} ».",
                     Prefs.lockEnabled(c)) { on ->
                     if (on) { Prefs.setLockEnabled(c, true); UiState.bump() }
                     else Lock.guard(c, "désactiver le verrou") { Prefs.setLockEnabled(c, false) }
                 }
                 divider()
-                ToggleRow("🛡️", "Protection des réglages",
+                ToggleRow(Icons.Rounded.Shield, "Protection des réglages",
                     "Empêche de désactiver le service, de forcer l'arrêt ou de désinstaller Hopescrolling.",
                     Prefs.protection(c)) { on ->
                     if (on) { Prefs.setProtection(c, true); UiState.bump() }
@@ -50,7 +58,7 @@ fun SettingsScreen(serviceOn: Boolean) {
         SectionTitle("Service")
         HopeCard {
             ActionRow(
-                if (serviceOn) "✅" else "⚠️",
+                if (serviceOn) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber,
                 if (serviceOn) "Service d'accessibilité actif" else "Service d'accessibilité inactif",
                 "Ouvrir les réglages d'accessibilité",
             ) { c.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
@@ -60,11 +68,11 @@ fun SettingsScreen(serviceOn: Boolean) {
         HopeCard {
             Column {
                 val version = c.packageManager.getPackageInfo(c.packageName, 0).versionName
-                ActionRow("⬇️", "Version $version", "Télécharger la dernière version") {
+                ActionRow(Icons.Rounded.Download, "Version $version", "Télécharger la dernière version") {
                     c.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$REPO_URL/releases/latest")))
                 }
                 divider()
-                ActionRow("🔄", "Mises à jour automatiques",
+                ActionRow(Icons.Rounded.Sync, "Mises à jour automatiques",
                     "Avec Obtainium : « Ajouter une appli » puis colle l'adresse du dépôt (copiée en appuyant ici).") {
                     c.getSystemService(ClipboardManager::class.java)
                         .setPrimaryClip(ClipData.newPlainText("Hopescrolling", REPO_URL))
@@ -76,7 +84,7 @@ fun SettingsScreen(serviceOn: Boolean) {
         SectionTitle("Diagnostic")
         HopeCard {
             Column {
-                ToggleRow("🩺", "Enregistrer les écrans",
+                ToggleRow(Icons.Rounded.BugReport, "Enregistrer les écrans",
                     "Si un écran n'est pas bloqué : active, ouvre cet écran 5 secondes, puis copie le diagnostic. Le texte de tes messages n'est pas enregistré.",
                     Prefs.diagnostic(c)) { on ->
                     Prefs.setDiagnostic(c, on)
@@ -84,7 +92,7 @@ fun SettingsScreen(serviceOn: Boolean) {
                     UiState.bump()
                 }
                 divider()
-                ActionRow("📋", "Copier le diagnostic") {
+                ActionRow(Icons.Rounded.ContentCopy, "Copier le diagnostic") {
                     val dumps = Prefs.allDumps(c)
                     if (dumps.isBlank()) {
                         Toast.makeText(c, "Rien d'enregistré : active le mode puis ouvre l'appli à analyser.",

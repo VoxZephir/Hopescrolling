@@ -4,6 +4,7 @@ package app.hopescrolling.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -12,28 +13,52 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.hopescrolling.Apps
+import app.hopescrolling.Equivalence
 import app.hopescrolling.Metric
 import app.hopescrolling.Prefs
 import app.hopescrolling.Rules
 import app.hopescrolling.Stats
+import app.hopescrolling.formatDuration
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.time.LocalDate
@@ -44,38 +69,38 @@ import java.util.Date
 @Composable
 fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
     val c = LocalContext.current
-    UiState.version // relit l'état quand il change
-    // Rafraîchit les comptes à rebours chaque minute.
+    UiState.version
     LaunchedEffect(Unit) { while (true) { delay(30_000); UiState.bump() } }
 
     val today = LocalDate.now()
-    val saved = Stats.minutesSaved(c, today)
-    val hour = LocalTime.now().hour
-    val hello = when (hour) {
+    val hello = when (LocalTime.now().hour) {
         in 5..11 -> "Bonjour"
         in 12..17 -> "Bon après-midi"
         else -> "Bonsoir"
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(Modifier.padding(start = 8.dp, top = 8.dp, bottom = 4.dp)) {
-            Text("$hello 👋", style = MaterialTheme.typography.headlineMedium)
-            Text(
-                today.format(DateTimeFormatter.ofPattern("EEEE d MMMM")).replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Row(Modifier.padding(start = 8.dp, top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(hello, style = MaterialTheme.typography.headlineLarge)
+                Text(
+                    today.format(DateTimeFormatter.ofPattern("EEEE d MMMM")).replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            StatusPill(serviceOn)
         }
 
-        HeroCard(serviceOn, saved, onEnable)
+        HeroCard(serviceOn, Stats.minutesSaved(c, today), onEnable)
 
         Rules.lockdownReason(c)?.let { reason ->
             HopeCard {
-                Row(Modifier.padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Text(if (Rules.focusActive(c)) "🎯" else "🌙", fontSize = 28.sp)
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconBadge(if (Rules.focusActive(c)) Icons.Rounded.CenterFocusStrong else Icons.Rounded.Bedtime)
                     Column(Modifier.padding(start = 16.dp)) {
                         Text(reason, style = MaterialTheme.typography.titleMedium)
-                        Text("Les applis surveillées sont fermées.",
+                        Text("Tes applis surveillées sont fermées.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -84,58 +109,207 @@ fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile("🔥", "${Stats.streak(c)} j", "Série", Modifier.weight(1f))
-            StatTile("🛑", "${Stats.count(c, today, Metric.BLOCK)}", "Vidéos bloquées", Modifier.weight(1f))
-            StatTile("⏭️", "${Stats.count(c, today, Metric.SKIP)}", "Pubs sautées", Modifier.weight(1f))
+            StatTile(Icons.Rounded.LocalFireDepartment, "${Stats.streak(c)} j", "Série", Modifier.weight(1f))
+            StatTile(Icons.Rounded.Block, "${Stats.count(c, today, Metric.BLOCK)}", "Bloquées", Modifier.weight(1f))
+            StatTile(Icons.Rounded.SkipNext, "${Stats.count(c, today, Metric.SKIP)}", "Sautées", Modifier.weight(1f))
         }
 
-        HopeCard {
-            Column(Modifier.padding(20.dp)) {
-                Text("7 derniers jours", style = MaterialTheme.typography.titleMedium)
-                val total = Stats.totalMinutesSaved(c)
-                Text("${total / 60} h ${total % 60} min récupérées au total",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(16.dp))
-                val days = (6 downTo 0).map { today.minusDays(it.toLong()) }
-                WeekChart(days, days.map { Stats.minutesSaved(c, it) })
-            }
-        }
-
+        ScreenTimeCard()
+        WeekCard()
+        EquivalenceCard()
         FocusCard()
         PauseCard()
-
-        Hint("Les minutes sont une estimation : 2 min par vidéo bloquée, 5 min quand tu fermes après la pause, 10 min par limite de fil atteinte.")
         Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun HeroCard(serviceOn: Boolean, saved: Int, onEnable: () -> Unit) {
-    val brush = if (serviceOn) Brush.linearGradient(listOf(DeepGreen, HopeGreen, Sunrise))
-    else Brush.linearGradient(listOf(Color(0xFF5A1F22), Danger))
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(brush).padding(24.dp)
+private fun StatusPill(on: Boolean) {
+    val bg = if (on) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+    val fg = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).background(bg).padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            if (serviceOn) "✅ Protection active" else "⚠️ Protection en pause",
-            color = Color.White, style = MaterialTheme.typography.titleMedium,
-        )
-        Spacer(Modifier.height(12.dp))
-        if (serviceOn) {
-            Text("$saved min", color = Color.White, fontSize = 52.sp,
-                style = MaterialTheme.typography.displaySmall)
-            Text("récupérées aujourd'hui 🌅", color = Color.White.copy(alpha = 0.9f),
-                style = MaterialTheme.typography.titleMedium)
-        } else {
-            Text("Les Shorts et les Reels ne sont pas bloqués en ce moment.",
-                color = Color.White, style = MaterialTheme.typography.bodyLarge)
+        Box(Modifier.size(8.dp).background(if (on) HopeGreen else Danger, CircleShape))
+        Spacer(Modifier.width(6.dp))
+        Text(if (on) "Actif" else "Inactif", style = MaterialTheme.typography.labelLarge, color = fg)
+    }
+}
+
+@Composable
+private fun HeroCard(serviceOn: Boolean, saved: Int, onEnable: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    if (!serviceOn) {
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(cs.errorContainer).padding(24.dp)
+        ) {
+            Icon(Icons.Rounded.WarningAmber, contentDescription = null, tint = cs.onErrorContainer)
+            Spacer(Modifier.height(12.dp))
+            Text("Protection en pause", style = MaterialTheme.typography.headlineSmall, color = cs.onErrorContainer)
+            Text("Les Shorts, les Reels et tes règles ne sont pas appliqués en ce moment.",
+                style = MaterialTheme.typography.bodyLarge, color = cs.onErrorContainer)
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onEnable,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Danger),
-            ) { Text("Activer") }
+            Button(onClick = onEnable,
+                colors = ButtonDefaults.buttonColors(containerColor = cs.error, contentColor = cs.onError)
+            ) { Text("Réactiver") }
         }
+        return
+    }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp))
+            .background(Brush.linearGradient(listOf(cs.primaryContainer, cs.tertiaryContainer)))
+            .padding(24.dp)
+    ) {
+        Text("Temps récupéré aujourd'hui", style = MaterialTheme.typography.titleMedium,
+            color = cs.onPrimaryContainer)
+        Spacer(Modifier.height(4.dp))
+        Text(formatDuration(saved), style = MaterialTheme.typography.displayMedium,
+            color = cs.onPrimaryContainer)
+        Text(
+            if (saved > 0) "Soit ${Equivalence.short(saved)}." else "La journée commence. Chaque blocage compte.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = cs.onPrimaryContainer.copy(alpha = 0.8f),
+        )
+    }
+}
+
+/** Temps réellement passé sur les applis surveillées, mesuré par le service. */
+@Composable
+private fun ScreenTimeCard() {
+    val c = LocalContext.current
+    UiState.version
+    val today = LocalDate.now()
+    val total = Stats.screenMinutes(c, today)
+    val avg = Stats.screenAverage(c)
+    val apps = Stats.screenByApp(c, today).take(4)
+    HopeCard {
+        Column(Modifier.padding(20.dp)) {
+            Text("Temps d'écran", style = MaterialTheme.typography.titleMedium)
+            Text("Sur tes applis surveillées, aujourd'hui", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(formatDuration(total), style = MaterialTheme.typography.displaySmall)
+                if (avg != null && avg > 0) {
+                    val diff = ((total - avg) * 100f / avg).toInt()
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        if (diff <= 0) "−${-diff} % vs ta moyenne" else "+$diff % vs ta moyenne",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (diff <= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+            if (apps.isEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text("Rien pour l'instant. Le temps s'affiche dès que tu ouvres une appli surveillée.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            val max = apps.maxOfOrNull { it.second } ?: 1
+            apps.forEach { (pkg, min) ->
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppIcon(pkg, 28)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row {
+                            Text(Apps.label(c, pkg), style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f))
+                            Text(formatDuration(min), style = MaterialTheme.typography.labelLarge)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { min / max.toFloat() },
+                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            drawStopIndicator = {},
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeekCard() {
+    val c = LocalContext.current
+    UiState.version
+    var mode by rememberSaveable { mutableIntStateOf(0) }
+    val today = LocalDate.now()
+    val days = (6 downTo 0).map { today.minusDays(it.toLong()) }
+    HopeCard {
+        Column(Modifier.padding(20.dp)) {
+            Text("7 derniers jours", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(mode == 0, { mode = 0 }, { Text("Récupéré") })
+                FilterChip(mode == 1, { mode = 1 }, { Text("Temps d'écran") })
+            }
+            Spacer(Modifier.height(16.dp))
+            WeekChart(days, days.map {
+                if (mode == 0) Stats.minutesSaved(c, it) else Stats.screenMinutes(c, it)
+            })
+        }
+    }
+}
+
+@Composable
+private fun EquivalenceCard() {
+    val c = LocalContext.current
+    UiState.version
+    val total = Stats.totalMinutesSaved(c)
+    HopeCard {
+        Column(Modifier.padding(20.dp)) {
+            Text("Depuis le début", style = MaterialTheme.typography.titleMedium)
+            Text("${formatDuration(total)} récupérées, c'est l'équivalent de :",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(16.dp))
+            val items = Equivalence.DASHBOARD
+            items.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { e -> EquivalenceTile(e, total, Modifier.weight(1f)) }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+            Text(
+                "Estimations : 2 min par vidéo bloquée, 5 min par appli refermée après la pause, " +
+                    "10 min par limite de fil atteinte, 5 min par tentative pendant le couvre-feu. " +
+                    items.joinToString(", ") { it.assumption } + ".",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun iconFor(e: Equivalence): ImageVector = when (e) {
+    Equivalence.BOOKS, Equivalence.PAGES -> Icons.AutoMirrored.Rounded.MenuBook
+    Equivalence.WALK_KM -> Icons.AutoMirrored.Rounded.DirectionsWalk
+    Equivalence.MOVIES -> Icons.Rounded.Movie
+    Equivalence.WORKOUTS -> Icons.Rounded.FitnessCenter
+    Equivalence.LESSONS -> Icons.Rounded.SelfImprovement
+    Equivalence.NIGHTS -> Icons.Rounded.Bedtime
+}
+
+@Composable
+private fun EquivalenceTile(e: Equivalence, minutes: Int, modifier: Modifier) {
+    val text = e.format(minutes)
+    val number = text.substringBefore(' ')
+    val unit = text.substringAfter(' ')
+    Column(
+        modifier.clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(16.dp)
+    ) {
+        Icon(iconFor(e), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(8.dp))
+        Text(number, style = MaterialTheme.typography.headlineMedium)
+        Text(unit, style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -145,8 +319,8 @@ private fun FocusCard() {
     UiState.version
     HopeCard {
         Column(Modifier.padding(20.dp)) {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                EmojiBadge("🎯")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Rounded.CenterFocusStrong)
                 Column(Modifier.padding(start = 16.dp)) {
                     Text("Mode concentration", style = MaterialTheme.typography.titleMedium)
                     Text("Ferme tes applis surveillées pendant un moment.",
@@ -161,7 +335,7 @@ private fun FocusCard() {
                 val now = System.currentTimeMillis()
                 val progress = if (until > start) (now - start).toFloat() / (until - start) else 0f
                 val leftMin = ((until - now) / 60_000).toInt() + 1
-                Text("Encore $leftMin min · jusqu'à " +
+                Text("Encore ${formatDuration(leftMin)} · jusqu'à " +
                     DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(until)),
                     style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
@@ -196,11 +370,16 @@ private fun PauseCard() {
     if (quit + cont == 0) return
     HopeCard {
         Column(Modifier.padding(20.dp)) {
-            Text("🧘 Pauses aujourd'hui", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Text("Tu as fermé $quit fois sur ${quit + cont}.",
-                style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Rounded.SelfImprovement)
+                Column(Modifier.padding(start = 16.dp)) {
+                    Text("Pauses aujourd'hui", style = MaterialTheme.typography.titleMedium)
+                    Text("Tu as refermé $quit fois sur ${quit + cont}.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
                 progress = { quit / (quit + cont).toFloat() },
                 modifier = Modifier.fillMaxWidth(),

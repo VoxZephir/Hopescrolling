@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
@@ -41,7 +43,7 @@ fun RulesScreen() {
         SectionTitle("Couvre-feu")
         HopeCard {
             Column {
-                ToggleRow("🌙", "Couvre-feu",
+                ToggleRow(Icons.Rounded.Bedtime, "Couvre-feu",
                     "Les applis surveillées et TikTok sont fermés pendant ces heures.",
                     Prefs.curfewOn(c)) { on ->
                     if (on) { Prefs.setCurfewOn(c, true); UiState.bump() }
