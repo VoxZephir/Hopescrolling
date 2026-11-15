@@ -16,6 +16,8 @@ android {
         val ciVersion = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionCode = ciVersion
         versionName = "0.$ciVersion"
+        val donate = (project.findProperty("hopescrolling.donateUrl") as String?).orEmpty()
+        buildConfigField("String", "DONATE_URL", "\"$donate\"")
     }
 
     signingConfigs {

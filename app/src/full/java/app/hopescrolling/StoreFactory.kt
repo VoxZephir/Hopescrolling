@@ -10,6 +10,7 @@ object StoreFactory {
         override val offers = emptyList<Offer>()
         override fun connect(c: Context) = Unit
         override fun buy(activity: Activity, offerId: String) = Unit
+        override fun tip(activity: Activity, tipId: String) = Unit
         override fun restore(c: Context) = Unit
     }
 }

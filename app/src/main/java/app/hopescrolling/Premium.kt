@@ -36,11 +36,14 @@ interface Store {
     val offers: List<Offer>
     fun connect(c: Context)
     fun buy(activity: Activity, offerId: String)
+    /** Don ponctuel (version Play Store : produits consommables Google Play). */
+    fun tip(activity: Activity, tipId: String)
     fun restore(c: Context)
 }
 
 /** État de la boutique observé par l'interface. */
 object StoreState {
     var offers by mutableStateOf<List<Offer>>(emptyList())
+    var tips by mutableStateOf<List<Offer>>(emptyList())
     var message by mutableStateOf<String?>(null)
 }

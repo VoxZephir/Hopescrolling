@@ -50,6 +50,8 @@ fun SettingsScreen(serviceOn: Boolean) {
             }
         }
 
+        SupportSection()
+
         SectionTitle("Anti-triche")
         HopeCard {
             Column {

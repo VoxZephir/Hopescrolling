@@ -122,6 +122,7 @@ fun HomeScreen(serviceOn: Boolean, onEnable: () -> Unit) {
         EquivalenceCard()
         FocusCard()
         PauseCard()
+        SupportNudge()
         Spacer(Modifier.height(8.dp))
     }
 }

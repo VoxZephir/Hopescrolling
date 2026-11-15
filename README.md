@@ -113,3 +113,9 @@ diagnostic**. Le diagnostic liste les IDs des vues visibles, sans le texte de te
 Une version Play Store (`play`) avec un abonnement Premium est prête à publier : voir
 [PLAYSTORE.md](PLAYSTORE.md). La version GitHub/Obtainium (`full`) reste entièrement gratuite.
 Politique de confidentialité : [docs/privacy.html](docs/privacy.html).
+
+## Dons
+
+- Version Play Store : dons intégrés via Google Play (produits `tip_small`, `tip_medium`, `tip_large`).
+- Version GitHub : renseigne ton lien (Ko-fi, Liberapay, GitHub Sponsors…) dans `gradle.properties`
+  (`hopescrolling.donateUrl=`) et dans `.github/FUNDING.yml`. Sans lien, le bouton n'apparaît pas.

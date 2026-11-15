@@ -9,6 +9,7 @@ import com.android.billingclient.api.BillingClient.ProductType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
@@ -25,6 +26,8 @@ import com.android.billingclient.api.QueryPurchasesParams
 object StoreFactory {
     const val SUB = "premium"
     const val LIFETIME = "premium_lifetime"
+    /** Dons : produits uniques consommables (rachetables). */
+    val TIPS = listOf("tip_small", "tip_medium", "tip_large")
 
     val store: Store = PlayStore()
 
@@ -61,9 +64,9 @@ object StoreFactory {
 
         private fun queryProducts() {
             val bc = client ?: return
-            listOf(SUB to ProductType.SUBS, LIFETIME to ProductType.INAPP).forEach { (id, type) ->
+            listOf(listOf(SUB) to ProductType.SUBS, (listOf(LIFETIME) + TIPS) to ProductType.INAPP).forEach { (ids, type) ->
                 val params = QueryProductDetailsParams.newBuilder().setProductList(
-                    listOf(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(type).build())
+                    ids.map { QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(type).build() }
                 ).build()
                 bc.queryProductDetailsAsync(params) { r, list ->
                     if (r.responseCode == BillingResponseCode.OK) {
@@ -104,6 +107,12 @@ object StoreFactory {
                 out += Offer("lifetime", "À vie", o.formattedPrice, "Un seul paiement")
             }
             StoreState.offers = out.sortedBy { listOf("sub_yearly", "sub_monthly", "lifetime").indexOf(it.id) }
+            StoreState.tips = TIPS.mapNotNull { id ->
+                details[id]?.oneTimePurchaseOfferDetails?.let { o ->
+                    handles[id] = details[id]!! to null
+                    Offer(id, details[id]!!.name, o.formattedPrice, "")
+                }
+            }
         }
 
         override fun buy(activity: Activity, offerId: String) {
@@ -117,6 +126,8 @@ object StoreFactory {
             )
         }
 
+        override fun tip(activity: Activity, tipId: String) = buy(activity, tipId)
+
         override fun onPurchasesUpdated(r: BillingResult, purchases: MutableList<Purchase>?) {
             when (r.responseCode) {
                 BillingResponseCode.OK -> purchases?.forEach { handle(it) }
@@ -127,6 +138,15 @@ object StoreFactory {
 
         private fun handle(p: Purchase, quiet: Boolean = false) {
             if (p.purchaseState != Purchase.PurchaseState.PURCHASED) return
+            if (p.products.any { it in TIPS }) {
+                // Don : on le consomme pour qu'il puisse être refait. Il ne donne pas Premium.
+                client?.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { r, _ ->
+                    if (r.responseCode == BillingResponseCode.OK && !quiet) {
+                        StoreState.message = "Merci infiniment pour ton soutien !"
+                    }
+                }
+                return
+            }
             Premium.set(app, true)
             if (!quiet) StoreState.message = "Merci ! Premium est activé."
             if (!p.isAcknowledged) {
@@ -146,7 +166,7 @@ object StoreFactory {
                 bc.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(type).build()) { r, list ->
                     if (r.responseCode == BillingResponseCode.OK) {
                         list.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }.forEach {
-                            found = true
+                            if (it.products.none { id -> id in TIPS }) found = true
                             handle(it, quiet = true)
                         }
                     } else {

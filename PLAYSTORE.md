@@ -40,6 +40,16 @@ Les identifiants doivent être exactement ceux-ci (ils sont dans `app/src/play/.
 | Abonnement | `premium` | `monthly` (1 mois), `yearly` (1 an) | 2,99 € / mois, 19,99 € / an |
 | Produit unique | `premium_lifetime` | — | 39,99 € |
 
+Dons (produits uniques **consommables**, ils ne donnent pas Premium et peuvent être refaits) :
+
+| ID produit | Nom affiché | Prix suggéré |
+|---|---|---|
+| `tip_small` | Un café | 2 € |
+| `tip_medium` | Un déjeuner | 5 € |
+| `tip_large` | Un grand merci | 10 € |
+
+Google Play impose son système de paiement pour les pourboires au développeur : pas de lien de don externe dans la version Play Store.
+
 Offre conseillée : **essai gratuit de 7 jours** sur le forfait `yearly` (Abonnements → premium → yearly → Ajouter une offre). L'appli détecte l'essai et l'affiche toute seule.
 
 Pour tester sans payer : Paramètres → Test de licence → ajoute ton compte Google.
